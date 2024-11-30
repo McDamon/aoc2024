@@ -22,9 +22,6 @@ mod tests {
 
     #[test]
     fn test_placeholder_test01() {
-        assert_eq!(
-            10,
-            get_placeholder("input/day01.txt")
-        );
+        assert_eq!(10, get_placeholder("input/day01.txt"));
     }
 }
