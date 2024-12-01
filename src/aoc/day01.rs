@@ -73,7 +73,7 @@ mod tests {
     fn test_get_total_distance() {
         assert_eq!(1151792, get_total_distance("input/day01.txt"));
     }
-    
+
     #[test]
     fn test_get_similarity_score_test01() {
         assert_eq!(31, get_similarity_score("input/day01_test01.txt"));
