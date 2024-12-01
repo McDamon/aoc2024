@@ -62,7 +62,8 @@
           buildInputs = with pkgs; [
             clippy
             just
-            lldb
+            lldb_19
+            python312Packages.datetime # for some reason we need this for lldb_19 formatters
             treefmtConfig.config.build.wrapper
           ];
           RUST_BACKTRACE = 1;
