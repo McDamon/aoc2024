@@ -4,7 +4,6 @@ use super::utils::get_lines;
 
 use std::iter::zip;
 
-#[derive(Debug, PartialEq)]
 struct Input {
     left_list: Vec<u32>,
     right_list: Vec<u32>,
