@@ -175,9 +175,7 @@ fn trace_xmas(
             None => 0,
         },
         'A' => match check_next_in_seq('S', dir, row_index, col_index, input) {
-            Some((_, _)) => {
-                1
-            }
+            Some((_, _)) => 1,
             None => 0,
         },
         _ => 0,
