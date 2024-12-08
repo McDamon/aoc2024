@@ -1,12 +1,12 @@
 {
   inputs = {
     fenix = {
-      url = "github:Defelo/fenix?ref=staging";
+      url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "nixpkgs/nixos-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
   };
 
   outputs =
@@ -14,8 +14,8 @@
       self,
       fenix,
       flake-utils,
-      nixpkgs,
       treefmt-nix,
+      nixpkgs,
     }:
     let
       # Define `pkgs` for each system

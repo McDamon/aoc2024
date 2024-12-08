@@ -40,14 +40,12 @@ fn get_sum_mul_cond(input_file: &str) -> u32 {
             is_enabled = true;
         } else if caps.name("disable").is_some() {
             is_enabled = false;
-        } else {
-            if is_enabled {
-                let _ = caps["operation"].to_string();
-                let left_str = caps["left"].to_string();
-                let right_str = caps["right"].to_string();
+        } else if is_enabled {
+            let _ = caps["operation"].to_string();
+            let left_str = caps["left"].to_string();
+            let right_str = caps["right"].to_string();
 
-                sum_mul += left_str.parse::<u32>().unwrap() * right_str.parse::<u32>().unwrap();
-            }
+            sum_mul += left_str.parse::<u32>().unwrap() * right_str.parse::<u32>().unwrap();
         }
     }
 

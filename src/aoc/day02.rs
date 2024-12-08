@@ -43,7 +43,7 @@ fn get_num_safe_reports(input_file: &str) -> u32 {
         let gradients: Vec<i32> = report
             .windows(2)
             .map(|elems| {
-                if let [left, right] = &elems[..] {
+                if let [left, right] = elems {
                     *right - *left
                 } else {
                     panic!()
@@ -77,7 +77,7 @@ fn get_num_safe_reports_with_prob_damp(input_file: &str) -> u32 {
             let gradients: Vec<i32> = filtered_report
                 .windows(2)
                 .map(|elems| {
-                    if let [left, right] = &elems[..] {
+                    if let [left, right] = elems {
                         *right - *left
                     } else {
                         panic!()
