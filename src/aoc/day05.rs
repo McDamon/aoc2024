@@ -68,6 +68,44 @@ fn get_sum_middle_page_num(input_file: &str) -> u32 {
     sum_middle_page_num
 }
 
+fn correct_update(update: &mut [u32], page_order_rules: &Vec<(u32, u32)>) {
+    for i in 0..update.len() {
+        for j in i..update.len() {
+            if i != j {
+                let left = update[i];
+                let right = update[j];
+                for (left_rule, right_rule) in page_order_rules {
+                    if left == *right_rule && right == *left_rule {
+                        update.swap(j, i);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn get_sum_corrected_middle_page_num(input_file: &str) -> u32 {
+    let input = parse_input(input_file);
+
+    let mut sum_middle_page_num = 0;
+
+    for update in input.updates {
+        if !check_update_order(&update, &input.page_order_rules) {
+            loop {
+                let mut mut_update: Vec<u32> = update.to_vec();
+                correct_update(&mut mut_update, &input.page_order_rules);
+                if check_update_order(&mut_update, &input.page_order_rules) {
+                    let middle = mut_update.len() / 2;
+                    sum_middle_page_num += mut_update[middle];
+                    break;
+                }
+            }
+        }
+    }
+
+    sum_middle_page_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -80,5 +118,18 @@ mod tests {
     #[test]
     fn test_get_sum_middle_page_num() {
         assert_eq!(4996, get_sum_middle_page_num("input/day05.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_corrected_middle_page_num_test01() {
+        assert_eq!(
+            123,
+            get_sum_corrected_middle_page_num("input/day05_test01.txt")
+        );
+    }
+
+    #[test]
+    fn test_get_sum_corrected_middle_page_num() {
+        assert_eq!(6311, get_sum_corrected_middle_page_num("input/day05.txt"));
     }
 }
