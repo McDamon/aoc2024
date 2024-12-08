@@ -49,6 +49,38 @@ fn print_grid(search_grid: &Vec<Vec<char>>) {
     }
 }
 
+fn min_row_index(row_index: usize) -> usize {
+    if row_index as i32 - 1 < 0 {
+        0
+    } else {
+        row_index - 1
+    }
+}
+
+fn min_col_index(col_index: usize) -> usize {
+    if col_index as i32 - 1 < 0 {
+        0
+    } else {
+        col_index - 1
+    }
+}
+
+fn max_row_index(row_index: usize, row_size: usize) -> usize {
+    if row_index as i32 + 1 > row_size as i32 - 1 {
+        row_size - 1
+    } else {
+        row_index + 1
+    }
+}
+
+fn max_col_index(col_index: usize, col_size: usize) -> usize {
+    if col_index as i32 + 1 > col_size as i32 - 1 {
+        col_size - 1
+    } else {
+        col_index + 1
+    }
+}
+
 fn check_next_in_xmas_seq(
     exp_letter: char,
     dir: Direction,
@@ -56,26 +88,10 @@ fn check_next_in_xmas_seq(
     col_index: usize,
     input: &Input,
 ) -> Option<(usize, usize)> {
-    let min_row_index = if row_index as i32 - 1 < 0 {
-        0
-    } else {
-        row_index - 1
-    };
-    let min_col_index = if col_index as i32 - 1 < 0 {
-        0
-    } else {
-        col_index - 1
-    };
-    let max_row_index = if row_index as i32 + 1 > input.row_size as i32 - 1 {
-        input.row_size - 1
-    } else {
-        row_index + 1
-    };
-    let max_col_index = if col_index as i32 + 1 > input.col_size as i32 - 1 {
-        input.col_size - 1
-    } else {
-        col_index + 1
-    };
+    let min_row_index = min_row_index(row_index);
+    let min_col_index = min_col_index(col_index);
+    let max_row_index = max_row_index(row_index, input.row_size);
+    let max_col_index = max_col_index(col_index, input.col_size);
 
     //   0 1 2 3 4 5 6 7 8 9
     // 0 M M M S X X M A S M
@@ -211,26 +227,10 @@ fn check_next_in_x_mas_seq(
     col_index: usize,
     input: &Input,
 ) -> Option<char> {
-    let min_row_index = if row_index as i32 - 1 < 0 {
-        0
-    } else {
-        row_index - 1
-    };
-    let min_col_index = if col_index as i32 - 1 < 0 {
-        0
-    } else {
-        col_index - 1
-    };
-    let max_row_index = if row_index as i32 + 1 > input.row_size as i32 - 1 {
-        input.row_size - 1
-    } else {
-        row_index + 1
-    };
-    let max_col_index = if col_index as i32 + 1 > input.col_size as i32 - 1 {
-        input.col_size - 1
-    } else {
-        col_index + 1
-    };
+    let min_row_index = min_row_index(row_index);
+    let min_col_index = min_col_index(col_index);
+    let max_row_index = max_row_index(row_index, input.row_size);
+    let max_col_index = max_col_index(col_index, input.col_size);
 
     match dir {
         Direction::NorthEast => {
