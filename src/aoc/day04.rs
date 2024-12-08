@@ -49,7 +49,7 @@ fn print_grid(search_grid: &Vec<Vec<char>>) {
     }
 }
 
-fn check_next_in_seq(
+fn check_next_in_xmas_seq(
     exp_letter: char,
     dir: Direction,
     row_index: usize,
@@ -162,19 +162,19 @@ fn trace_xmas(
     input: &Input,
 ) -> u32 {
     match last_letter {
-        'X' => match check_next_in_seq('M', dir, row_index, col_index, input) {
+        'X' => match check_next_in_xmas_seq('M', dir, row_index, col_index, input) {
             Some((new_row_index, new_col_index)) => {
                 trace_xmas('M', dir, new_row_index, new_col_index, input)
             }
             None => 0,
         },
-        'M' => match check_next_in_seq('A', dir, row_index, col_index, input) {
+        'M' => match check_next_in_xmas_seq('A', dir, row_index, col_index, input) {
             Some((new_row_index, new_col_index)) => {
                 trace_xmas('A', dir, new_row_index, new_col_index, input)
             }
             None => 0,
         },
-        'A' => match check_next_in_seq('S', dir, row_index, col_index, input) {
+        'A' => match check_next_in_xmas_seq('S', dir, row_index, col_index, input) {
             Some((_, _)) => 1,
             None => 0,
         },
@@ -205,6 +205,104 @@ fn get_sum_xmas(input_file: &str) -> u32 {
     sum_xmas
 }
 
+fn check_next_in_x_mas_seq(
+    dir: Direction,
+    row_index: usize,
+    col_index: usize,
+    input: &Input,
+) -> Option<char> {
+    let min_row_index = if row_index as i32 - 1 < 0 {
+        0
+    } else {
+        row_index - 1
+    };
+    let min_col_index = if col_index as i32 - 1 < 0 {
+        0
+    } else {
+        col_index - 1
+    };
+    let max_row_index = if row_index as i32 + 1 > input.row_size as i32 - 1 {
+        input.row_size - 1
+    } else {
+        row_index + 1
+    };
+    let max_col_index = if col_index as i32 + 1 > input.col_size as i32 - 1 {
+        input.col_size - 1
+    } else {
+        col_index + 1
+    };
+
+    match dir {
+        Direction::NorthEast => {
+            if (input.search_grid[min_row_index][max_col_index] == 'S'
+                || input.search_grid[min_row_index][max_col_index] == 'M')
+                && row_index != min_row_index
+                && col_index != max_col_index
+            {
+                return Some(input.search_grid[min_row_index][max_col_index]);
+            }
+        }
+        Direction::SouthEast => {
+            if (input.search_grid[max_row_index][max_col_index] == 'S'
+                || input.search_grid[max_row_index][max_col_index] == 'M')
+                && row_index != max_row_index
+                && col_index != max_col_index
+            {
+                return Some(input.search_grid[max_row_index][max_col_index]);
+            }
+        }
+        Direction::SouthWest => {
+            if (input.search_grid[max_row_index][min_col_index] == 'S'
+                || input.search_grid[max_row_index][min_col_index] == 'M')
+                && row_index != max_row_index
+                && col_index != min_col_index
+            {
+                return Some(input.search_grid[max_row_index][min_col_index]);
+            }
+        }
+        Direction::NorthWest => {
+            if (input.search_grid[min_row_index][min_col_index] == 'S'
+                || input.search_grid[min_row_index][min_col_index] == 'M')
+                && row_index != min_row_index
+                && col_index != min_col_index
+            {
+                return Some(input.search_grid[min_row_index][min_col_index]);
+            }
+        }
+        _ => (),
+    }
+    None
+}
+
+fn get_sum_x_mas(input_file: &str) -> u32 {
+    let input = parse_input(input_file);
+
+    let mut sum_x_mas = 0;
+
+    for i in 0..input.row_size {
+        for j in 0..input.col_size {
+            if input.search_grid[i][j] == 'A' {
+                let nw = check_next_in_x_mas_seq(Direction::NorthWest, i, j, &input);
+                let ne = check_next_in_x_mas_seq(Direction::NorthEast, i, j, &input);
+                let sw = check_next_in_x_mas_seq(Direction::SouthWest, i, j, &input);
+                let se = check_next_in_x_mas_seq(Direction::SouthEast, i, j, &input);
+
+                let mut fwd_str: Vec<char> = vec![nw.unwrap_or('.'), 'A', se.unwrap_or('.')];
+                fwd_str.sort();
+
+                let mut back_str: Vec<char> = vec![sw.unwrap_or('.'), 'A', ne.unwrap_or('.')];
+                back_str.sort();
+
+                if String::from_iter(fwd_str) == "AMS" && String::from_iter(back_str) == "AMS" {
+                    sum_x_mas += 1;
+                }
+            }
+        }
+    }
+
+    sum_x_mas
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,5 +315,15 @@ mod tests {
     #[test]
     fn test_get_sum_xmas() {
         assert_eq!(2336, get_sum_xmas("input/day04.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_x_mas_test01() {
+        assert_eq!(9, get_sum_x_mas("input/day04_test01.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_x_mas() {
+        assert_eq!(1831, get_sum_x_mas("input/day04.txt"));
     }
 }
