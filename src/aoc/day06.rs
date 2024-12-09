@@ -85,20 +85,20 @@ fn guard_leaves_mapped_area(
     mut_area: &mut Vec<Vec<GridEntry>>,
     current_pos: &mut (usize, usize),
 ) -> bool {
-    false
+    mut_area[current_pos.0][current_pos.1] = GridEntry::Visited;
+    print_grid(&mut_area);
+    true
 }
 
 fn get_distinct_pos(input_file: &str) -> u32 {
     let input = parse_input(input_file);
-
-    print_grid(&input.mapped_area);
 
     let mut distinct_pos: u32 = 0;
 
     let mut mut_area = input.mapped_area.clone();
     let mut current_pos = input.start_pos;
     loop {
-        if guard_leaves_mapped_area(&mut mut_area, &mut current_pos) {
+        if !guard_leaves_mapped_area(&mut mut_area, &mut current_pos) {
             for i in 0..mut_area.len() {
                 for j in 0..mut_area[i].len() {
                     if mut_area[i][j] == GridEntry::Visited {
