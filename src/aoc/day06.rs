@@ -83,40 +83,41 @@ struct TreeNodeEntry {
     direction: Direction,
 }
 
-fn build_tree(grid: &Grid<GridEntry>, arena: &mut Arena<TreeNodeEntry>, current_node_id: NodeId) {
-    fn process_tree_entry(
-        grid: &Grid<GridEntry>,
-        arena: &mut Arena<TreeNodeEntry>,
-        current_node_id: NodeId,
-        pri_dir: Direction,
-        pri_dir_pos: (usize, usize),
-        sec_dir: Direction,
-        sec_dir_pos: (usize, usize),
-    ) {
-        if let Some(next_pri_grid_entry) = grid.get(pri_dir_pos.0, pri_dir_pos.1) {
-            if next_pri_grid_entry == &GridEntry::Obstruction {
-                if let Some(next_sec_grid_entry) = grid.get(sec_dir_pos.0, sec_dir_pos.1) {
-                    if next_sec_grid_entry != &GridEntry::Obstruction {
-                        let next_node_id = arena.new_node(TreeNodeEntry {
-                            grid_entry: *next_sec_grid_entry,
-                            pos: sec_dir_pos,
-                            direction: sec_dir,
-                        });
-                        current_node_id.append(next_node_id, arena);
-                        build_tree(grid, arena, next_node_id);
-                    }
+fn process_tree_entry(
+    grid: &Grid<GridEntry>,
+    arena: &mut Arena<TreeNodeEntry>,
+    current_node_id: NodeId,
+    pri_dir: Direction,
+    pri_dir_pos: (usize, usize),
+    sec_dir: Direction,
+    sec_dir_pos: (usize, usize),
+) {
+    if let Some(next_pri_grid_entry) = grid.get(pri_dir_pos.0, pri_dir_pos.1) {
+        if next_pri_grid_entry == &GridEntry::Obstruction {
+            if let Some(next_sec_grid_entry) = grid.get(sec_dir_pos.0, sec_dir_pos.1) {
+                if next_sec_grid_entry != &GridEntry::Obstruction {
+                    let next_node_id = arena.new_node(TreeNodeEntry {
+                        grid_entry: *next_sec_grid_entry,
+                        pos: sec_dir_pos,
+                        direction: sec_dir,
+                    });
+                    current_node_id.append(next_node_id, arena);
+                    build_tree(grid, arena, next_node_id);
                 }
-            } else {
-                let next_node_id = arena.new_node(TreeNodeEntry {
-                    grid_entry: *next_pri_grid_entry,
-                    pos: pri_dir_pos,
-                    direction: pri_dir,
-                });
-                current_node_id.append(next_node_id, arena);
-                build_tree(grid, arena, next_node_id);
             }
+        } else {
+            let next_node_id = arena.new_node(TreeNodeEntry {
+                grid_entry: *next_pri_grid_entry,
+                pos: pri_dir_pos,
+                direction: pri_dir,
+            });
+            current_node_id.append(next_node_id, arena);
+            build_tree(grid, arena, next_node_id);
         }
     }
+}
+
+fn build_tree(grid: &Grid<GridEntry>, arena: &mut Arena<TreeNodeEntry>, current_node_id: NodeId) {
     let maybe_current_node = arena.get_mut(current_node_id);
     if let Some(current_node) = maybe_current_node {
         let current_node_entry = current_node.get();
