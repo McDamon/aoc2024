@@ -83,11 +83,40 @@ struct TreeNodeEntry {
     direction: Direction,
 }
 
-fn build_tree(
-    grid: &Grid<GridEntry>,
-    arena: &mut Arena<TreeNodeEntry>,
-    current_node_id: NodeId
-) {
+fn build_tree(grid: &Grid<GridEntry>, arena: &mut Arena<TreeNodeEntry>, current_node_id: NodeId) {
+    fn process_tree_entry(
+        grid: &Grid<GridEntry>,
+        arena: &mut Arena<TreeNodeEntry>,
+        current_node_id: NodeId,
+        pri_dir: Direction,
+        pri_dir_pos: (usize, usize),
+        sec_dir: Direction,
+        sec_dir_pos: (usize, usize),
+    ) {
+        if let Some(next_pri_grid_entry) = grid.get(pri_dir_pos.0, pri_dir_pos.1) {
+            if next_pri_grid_entry == &GridEntry::Obstruction {
+                if let Some(next_sec_grid_entry) = grid.get(sec_dir_pos.0, sec_dir_pos.1) {
+                    if next_sec_grid_entry != &GridEntry::Obstruction {
+                        let next_node_id = arena.new_node(TreeNodeEntry {
+                            grid_entry: *next_sec_grid_entry,
+                            pos: sec_dir_pos,
+                            direction: sec_dir,
+                        });
+                        current_node_id.append(next_node_id, arena);
+                        build_tree(grid, arena, next_node_id);
+                    }
+                }
+            } else {
+                let next_node_id = arena.new_node(TreeNodeEntry {
+                    grid_entry: *next_pri_grid_entry,
+                    pos: pri_dir_pos,
+                    direction: pri_dir,
+                });
+                current_node_id.append(next_node_id, arena);
+                build_tree(grid, arena, next_node_id);
+            }
+        }
+    }
     let maybe_current_node = arena.get_mut(current_node_id);
     if let Some(current_node) = maybe_current_node {
         let current_node_entry = current_node.get();
@@ -104,104 +133,48 @@ fn build_tree(
         let w_dir = (current_row, current_col - 1);
         match current_node_entry.direction {
             Direction::N => {
-                if let Some(next_n_grid_entry) = grid.get(n_dir.0, n_dir.1) {
-                    if next_n_grid_entry == &GridEntry::Obstruction {
-                        if let Some(next_e_grid_entry) = grid.get(e_dir.0, e_dir.1) {
-                            if next_e_grid_entry != &GridEntry::Obstruction {
-                                let next_node_id = arena.new_node(TreeNodeEntry {
-                                    grid_entry: *next_e_grid_entry,
-                                    pos: e_dir,
-                                    direction: Direction::E,
-                                });
-                                current_node_id.append(next_node_id, arena);
-                                build_tree(grid, arena, next_node_id);
-                            }
-                        }
-                    } else {
-                        let next_node_id = arena.new_node(TreeNodeEntry {
-                            grid_entry: *next_n_grid_entry,
-                            pos: n_dir,
-                            direction: Direction::N,
-                        });
-                        current_node_id.append(next_node_id, arena);
-                        build_tree(grid, arena, next_node_id);
-                    }
-                }
+                process_tree_entry(
+                    grid,
+                    arena,
+                    current_node_id,
+                    Direction::N,
+                    n_dir,
+                    Direction::E,
+                    e_dir,
+                );
             }
             Direction::S => {
-                if let Some(next_s_grid_entry) = grid.get(s_dir.0, s_dir.1) {
-                    if next_s_grid_entry == &GridEntry::Obstruction {
-                        if let Some(next_w_grid_entry) = grid.get(w_dir.0, w_dir.1) {
-                            if next_w_grid_entry != &GridEntry::Obstruction {
-                                let next_node_id = arena.new_node(TreeNodeEntry {
-                                    grid_entry: *next_w_grid_entry,
-                                    pos: w_dir,
-                                    direction: Direction::W,
-                                });
-                                current_node_id.append(next_node_id, arena);
-                                build_tree(grid, arena, next_node_id);
-                            }
-                        }
-                    } else {
-                        let next_node_id = arena.new_node(TreeNodeEntry {
-                            grid_entry: *next_s_grid_entry,
-                            pos: s_dir,
-                            direction: Direction::S,
-                        });
-                        current_node_id.append(next_node_id, arena);
-                        build_tree(grid, arena, next_node_id);
-                    }
-                }
+                process_tree_entry(
+                    grid,
+                    arena,
+                    current_node_id,
+                    Direction::S,
+                    s_dir,
+                    Direction::W,
+                    w_dir,
+                );
             }
             Direction::E => {
-                if let Some(next_e_grid_entry) = grid.get(current_row, current_col + 1) {
-                    if next_e_grid_entry == &GridEntry::Obstruction {
-                        if let Some(next_s_grid_entry) = grid.get(s_dir.0, s_dir.1) {
-                            if next_s_grid_entry != &GridEntry::Obstruction {
-                                let next_node_id = arena.new_node(TreeNodeEntry {
-                                    grid_entry: *next_s_grid_entry,
-                                    pos: s_dir,
-                                    direction: Direction::S,
-                                });
-                                current_node_id.append(next_node_id, arena);
-                                build_tree(grid, arena, next_node_id);
-                            }
-                        }
-                    } else {
-                        let next_node_id = arena.new_node(TreeNodeEntry {
-                            grid_entry: *next_e_grid_entry,
-                            pos: e_dir,
-                            direction: Direction::E,
-                        });
-                        current_node_id.append(next_node_id, arena);
-                        build_tree(grid, arena, next_node_id);
-                    }
-                }
+                process_tree_entry(
+                    grid,
+                    arena,
+                    current_node_id,
+                    Direction::E,
+                    e_dir,
+                    Direction::S,
+                    s_dir,
+                );
             }
             Direction::W => {
-                if let Some(next_w_grid_entry) = grid.get(current_row, current_col - 1) {
-                    if next_w_grid_entry == &GridEntry::Obstruction {
-                        if let Some(next_n_grid_entry) = grid.get(n_dir.0, n_dir.1) {
-                            if next_n_grid_entry != &GridEntry::Obstruction {
-                                let next_node_id = arena.new_node(TreeNodeEntry {
-                                    grid_entry: *next_n_grid_entry,
-                                    pos: n_dir,
-                                    direction: Direction::N,
-                                });
-                                current_node_id.append(next_node_id, arena);
-                                build_tree(grid, arena, next_node_id);
-                            }
-                        }
-                    } else {
-                        let next_node_id = arena.new_node(TreeNodeEntry {
-                            grid_entry: *next_w_grid_entry,
-                            pos: w_dir,
-                            direction: Direction::W,
-                        });
-                        current_node_id.append(next_node_id, arena);
-                        build_tree(grid, arena, next_node_id);
-                    }
-                }
+                process_tree_entry(
+                    grid,
+                    arena,
+                    current_node_id,
+                    Direction::W,
+                    w_dir,
+                    Direction::N,
+                    n_dir,
+                );
             }
         }
     }
