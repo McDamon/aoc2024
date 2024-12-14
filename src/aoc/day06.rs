@@ -1,17 +1,32 @@
 // https://adventofcode.com/2024/day/6
 
+use std::collections::HashSet;
+
+use grid::Grid;
+use indextree::{Arena, NodeId};
+
 use super::utils::get_lines;
 
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
+#[repr(u8)]
 enum GridEntry {
     #[default]
-    Obstruction,
-    GuardN,
-    GuardS,
-    GuardE,
-    GuardW,
-    Visited,
-    Clear,
+    Obstruction = b'#',
+    GuardN = b'^',
+    Clear = b'.',
+}
+
+impl TryFrom<u8> for GridEntry {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            b'#' => Ok(GridEntry::Obstruction),
+            b'^' => Ok(GridEntry::GuardN),
+            b'.' => Ok(GridEntry::Clear),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -23,8 +38,7 @@ enum Direction {
 }
 
 struct Input {
-    mapped_area: Vec<Vec<GridEntry>>,
-    start_pos: (usize, usize),
+    grid: Grid<GridEntry>,
 }
 
 fn parse_input(input_file: &str) -> Input {
@@ -32,145 +46,199 @@ fn parse_input(input_file: &str) -> Input {
 
     let mut iter = lines.split(|e| e.is_empty());
 
-    let grid = parse_grid(iter.next().unwrap().to_owned());
-
     Input {
-        mapped_area: grid.0,
-        start_pos: grid.1,
+        grid: parse_grid(iter.next().unwrap().to_owned()),
     }
 }
 
-fn parse_grid(tiles_lines: Vec<String>) -> (Vec<Vec<GridEntry>>, (usize, usize)) {
-    let mut tiles = vec![];
-    let (mut row, mut col) = (0, 0);
-    for (i, tiles_line) in tiles_lines.iter().enumerate() {
-        let mut tiles_entries: Vec<GridEntry> = Vec::new();
-        for (j, tiles_entry) in tiles_line.chars().enumerate() {
-            match tiles_entry {
-                '^' => {
-                    tiles_entries.push(GridEntry::GuardN);
-                    row = i;
-                    col = j;
-                }
-                'v' => tiles_entries.push(GridEntry::GuardS),
-                '>' => tiles_entries.push(GridEntry::GuardE),
-                '<' => tiles_entries.push(GridEntry::GuardW),
-                '.' => tiles_entries.push(GridEntry::Clear),
-                _ => tiles_entries.push(GridEntry::Obstruction),
+fn parse_grid(grid_lines: Vec<String>) -> Grid<GridEntry> {
+    let mut grid = Grid::new(0, 0);
+    for grid_line in grid_lines.into_iter() {
+        let mut grid_entries: Vec<GridEntry> = Vec::new();
+        for grid_entry in grid_line.chars() {
+            match GridEntry::try_from(grid_entry as u8) {
+                Ok(pipe) => grid_entries.push(pipe),
+                Err(_) => panic!("Invalid grid entry {}", grid_entry),
             }
         }
-        tiles.push(tiles_entries)
+        grid.push_row(grid_entries)
     }
-    (tiles, (row, col))
+    grid
 }
 
-fn print_grid(grid: &[Vec<GridEntry>]) {
-    println!("Grid:");
-    for row in grid.iter() {
-        for entry in row {
-            match entry {
-                GridEntry::Obstruction => print!("#"),
-                GridEntry::GuardN => print!("^"),
-                GridEntry::GuardS => print!("v"),
-                GridEntry::GuardE => print!(">"),
-                GridEntry::GuardW => print!("<"),
-                GridEntry::Visited => print!("X"),
-                GridEntry::Clear => print!("."),
-            }
+fn print_grid(grid: &Grid<GridEntry>) {
+    for grid_row in grid.iter_rows() {
+        for grid_entry in grid_row {
+            print!("{:#}", *grid_entry as u8 as char);
         }
         println!();
     }
 }
 
-fn guard_leaves_mapped_area(
-    mut_area: &mut [Vec<GridEntry>],
-    (current_row, current_col): &mut (usize, usize),
-    current_dir: &mut Direction,
-) -> bool {
-    let current_entry = &mut mut_area[*current_row][*current_col];
-    match current_dir {
-        Direction::N => {
-            *current_entry = GridEntry::Visited;
-            if *current_row == 0 {
-                return true;
-            }
-            *current_row -= 1;
+#[derive(Debug, Copy, Clone)]
+struct TreeNodeEntry {
+    grid_entry: GridEntry,
+    pos: (usize, usize),
+    direction: Direction,
+}
 
-            let next_entry = &mut mut_area[*current_row][*current_col];
-
-            if next_entry == &GridEntry::Obstruction {
-                *current_dir = Direction::E;
-                *current_row += 1;
-            }
+fn build_tree(grid: &Grid<GridEntry>, arena: &mut Arena<TreeNodeEntry>, current_node_id: NodeId) {
+    let maybe_current_node = arena.get_mut(current_node_id);
+    if let Some(current_node) = maybe_current_node {
+        let current_node_entry = current_node.get();
+        let (current_row, current_col) = current_node_entry.pos;
+        if current_row as i32 - 1 < 0 {
+            return;
+        }        
+        if current_col as i32 - 1 < 0 {
+            return;
         }
-        Direction::S => {
-            *current_entry = GridEntry::Visited;
-            if *current_row == mut_area.len() - 1 {
-                return true;
+        let n_dir = (current_row - 1, current_col);
+        let s_dir = (current_row + 1, current_col);
+        let e_dir = (current_row, current_col + 1);
+        let w_dir = (current_row, current_col - 1);
+        match current_node_entry.direction {
+            Direction::N => {
+                if let Some(next_n_grid_entry) = grid.get(n_dir.0, n_dir.1) {
+                    if next_n_grid_entry == &GridEntry::Obstruction {
+                        if let Some(next_e_grid_entry) = grid.get(e_dir.0, e_dir.1) {
+                            if next_e_grid_entry != &GridEntry::Obstruction {
+                                let next_node_id = arena.new_node(TreeNodeEntry {
+                                    grid_entry: *next_e_grid_entry,
+                                    pos: e_dir,
+                                    direction: Direction::E,
+                                });
+                                current_node_id.append(next_node_id, arena);
+                                build_tree(grid, arena, next_node_id);
+                            }
+                        }
+                    } else {
+                        let next_node_id = arena.new_node(TreeNodeEntry {
+                            grid_entry: *next_n_grid_entry,
+                            pos: n_dir,
+                            direction: Direction::N,
+                        });
+                        current_node_id.append(next_node_id, arena);
+                        build_tree(grid, arena, next_node_id);
+                    }
+                }
             }
-            *current_row += 1;
-
-            let next_entry = &mut mut_area[*current_row][*current_col];
-
-            if next_entry == &GridEntry::Obstruction {
-                *current_dir = Direction::W;
-                *current_row -= 1;
+            Direction::S => {
+                if let Some(next_s_grid_entry) = grid.get(s_dir.0, s_dir.1) {
+                    if next_s_grid_entry == &GridEntry::Obstruction {
+                        if let Some(next_w_grid_entry) = grid.get(w_dir.0, w_dir.1) {
+                            if next_w_grid_entry != &GridEntry::Obstruction {
+                                let next_node_id = arena.new_node(TreeNodeEntry {
+                                    grid_entry: *next_w_grid_entry,
+                                    pos: w_dir,
+                                    direction: Direction::W,
+                                });
+                                current_node_id.append(next_node_id, arena);
+                                build_tree(grid, arena, next_node_id);
+                            }
+                        }
+                    } else {
+                        let next_node_id = arena.new_node(TreeNodeEntry {
+                            grid_entry: *next_s_grid_entry,
+                            pos: s_dir,
+                            direction: Direction::S,
+                        });
+                        current_node_id.append(next_node_id, arena);
+                        build_tree(grid, arena, next_node_id);
+                    }
+                }
             }
-        }
-        Direction::E => {
-            *current_entry = GridEntry::Visited;
-            if *current_col == mut_area[*current_row].len() - 1 {
-                return true;
+            Direction::E => {
+                if let Some(next_e_grid_entry) = grid.get(current_row, current_col + 1) {
+                    if next_e_grid_entry == &GridEntry::Obstruction {
+                        if let Some(next_s_grid_entry) = grid.get(s_dir.0, s_dir.1) {
+                            if next_s_grid_entry != &GridEntry::Obstruction {
+                                let next_node_id = arena.new_node(TreeNodeEntry {
+                                    grid_entry: *next_s_grid_entry,
+                                    pos: s_dir,
+                                    direction: Direction::S,
+                                });
+                                current_node_id.append(next_node_id, arena);
+                                build_tree(grid, arena, next_node_id);
+                            }
+                        }
+                    } else {
+                        let next_node_id = arena.new_node(TreeNodeEntry {
+                            grid_entry: *next_e_grid_entry,
+                            pos: e_dir,
+                            direction: Direction::E,
+                        });
+                        current_node_id.append(next_node_id, arena);
+                        build_tree(grid, arena, next_node_id);
+                    }
+                }
             }
-            *current_col += 1;
-
-            let next_entry = &mut mut_area[*current_row][*current_col];
-
-            if next_entry == &GridEntry::Obstruction {
-                *current_dir = Direction::S;
-                *current_col -= 1;
-            }
-        }
-        Direction::W => {
-            *current_entry = GridEntry::Visited;
-            if *current_col == 0 {
-                return true;
-            }
-            *current_col -= 1;
-
-            let next_entry = &mut mut_area[*current_row][*current_col];
-
-            if next_entry == &GridEntry::Obstruction {
-                *current_dir = Direction::N;
-                *current_col += 1;
+            Direction::W => {
+                if let Some(next_w_grid_entry) = grid.get(current_row, current_col - 1) {
+                    if next_w_grid_entry == &GridEntry::Obstruction {
+                        if let Some(next_n_grid_entry) = grid.get(n_dir.0, n_dir.1) {
+                            if next_n_grid_entry != &GridEntry::Obstruction {
+                                let next_node_id = arena.new_node(TreeNodeEntry {
+                                    grid_entry: *next_n_grid_entry,
+                                    pos: n_dir,
+                                    direction: Direction::N,
+                                });
+                                current_node_id.append(next_node_id, arena);
+                                build_tree(grid, arena, next_node_id);
+                            }
+                        }
+                    } else {
+                        let next_node_id = arena.new_node(TreeNodeEntry {
+                            grid_entry: *next_w_grid_entry,
+                            pos: w_dir,
+                            direction: Direction::W,
+                        });
+                        current_node_id.append(next_node_id, arena);
+                        build_tree(grid, arena, next_node_id);
+                    }
+                }
             }
         }
     }
-    //print_grid(mut_area);
-    false
 }
 
 fn get_distinct_pos(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
-    let mut distinct_pos: u32 = 0;
-
-    let mut mut_area = input.mapped_area.clone();
-    let mut current_pos = input.start_pos;
-    let mut current_dir: Direction = Direction::N;
-    loop {
-        if guard_leaves_mapped_area(&mut mut_area, &mut current_pos, &mut current_dir) {
-            for (row, mut_area_row) in mut_area.iter().enumerate() {
-                for (col, _) in mut_area_row.iter().enumerate() {
-                    if mut_area[row][col] == GridEntry::Visited {
-                        distinct_pos += 1
-                    }
-                }
-            }
-            break;
+    let mut start_pos: Option<(usize, usize)> = None;
+    for ((row, col), pipe) in input.grid.indexed_iter() {
+        if *pipe == GridEntry::GuardN {
+            start_pos = Some((row, col));
         }
     }
-    distinct_pos
+
+    if let Some((row, col)) = start_pos {
+        let mut arena: Arena<TreeNodeEntry> = Arena::new();
+        let root_node = arena.new_node(TreeNodeEntry {
+            grid_entry: GridEntry::GuardN,
+            pos: (row, col),
+            direction: Direction::N,
+        });
+
+        build_tree(&input.grid, &mut arena, root_node);
+
+        let traverser = root_node.traverse(&arena);
+        let mut node_ids: HashSet<(usize, usize)> = HashSet::new();
+        for ev in traverser {
+            match ev {
+                indextree::NodeEdge::Start(node_id) => {
+                    if let Some(node) = arena.get(node_id) {
+                        let node_entry = node.get();
+                        node_ids.insert(node_entry.pos);
+                    }
+                }
+                indextree::NodeEdge::End(_) => {}
+            }
+        }
+        node_ids.len() as u32
+    } else {
+        panic!("Invalid start node");
+    }
 }
 
 #[cfg(test)]
@@ -184,6 +252,8 @@ mod tests {
 
     #[test]
     fn test_get_distinct_pos() {
-        assert_eq!(5564, get_distinct_pos("input/day06.txt"));
+        stacker::grow(48 * 1024 * 1024 * 1024, || {
+            assert_eq!(5564, get_distinct_pos("input/day06.txt"));
+        });
     }
 }
