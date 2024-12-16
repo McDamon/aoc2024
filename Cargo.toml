@@ -12,9 +12,6 @@ name = "aoc"
 path = "src/lib.rs"
 
 [dependencies]
-grid = "0.15.0"
-indextree = "4.7.3"
 lazy_static = "1.5.0"
-rayon = "1.10.0"
 regex = "1.11.1"
 stacker = "0.1.17"

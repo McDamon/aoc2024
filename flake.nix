@@ -66,7 +66,6 @@
             python312Packages.datetime # for some reason we need this for lldb_19 formatters
             treefmtConfig.config.build.wrapper
           ];
-          RUST_BACKTRACE = 1;
         };
 
         # Formatter for `nix fmt`

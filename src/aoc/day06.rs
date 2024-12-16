@@ -2,28 +2,25 @@
 
 use std::collections::HashSet;
 
-use grid::Grid;
-use indextree::{Arena, NodeId};
-
 use super::utils::get_lines;
 
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
 #[repr(u8)]
-enum GridEntry {
+enum MapEntry {
     #[default]
     Obstruction = b'#',
     GuardN = b'^',
     Clear = b'.',
 }
 
-impl TryFrom<u8> for GridEntry {
+impl TryFrom<u8> for MapEntry {
     type Error = ();
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            b'#' => Ok(GridEntry::Obstruction),
-            b'^' => Ok(GridEntry::GuardN),
-            b'.' => Ok(GridEntry::Clear),
+            b'#' => Ok(MapEntry::Obstruction),
+            b'^' => Ok(MapEntry::GuardN),
+            b'.' => Ok(MapEntry::Clear),
             _ => Err(()),
         }
     }
@@ -38,7 +35,7 @@ enum Direction {
 }
 
 struct Input {
-    grid: Grid<GridEntry>,
+    map: Vec<Vec<MapEntry>>,
 }
 
 fn parse_input(input_file: &str) -> Input {
@@ -47,136 +44,118 @@ fn parse_input(input_file: &str) -> Input {
     let mut iter = lines.split(|e| e.is_empty());
 
     Input {
-        grid: parse_grid(iter.next().unwrap().to_owned()),
+        map: parse_map(iter.next().unwrap().to_owned()),
     }
 }
 
-fn parse_grid(grid_lines: Vec<String>) -> Grid<GridEntry> {
-    let mut grid = Grid::new(0, 0);
-    for grid_line in grid_lines.into_iter() {
-        let mut grid_entries: Vec<GridEntry> = Vec::new();
-        for grid_entry in grid_line.chars() {
-            match GridEntry::try_from(grid_entry as u8) {
-                Ok(pipe) => grid_entries.push(pipe),
-                Err(_) => panic!("Invalid grid entry {}", grid_entry),
+fn parse_map(map_lines: Vec<String>) -> Vec<Vec<MapEntry>> {
+    let mut map = vec![];
+    for map_line in map_lines.into_iter() {
+        let mut map_entries: Vec<MapEntry> = Vec::new();
+        for map_entry in map_line.chars() {
+            match MapEntry::try_from(map_entry as u8) {
+                Ok(pipe) => map_entries.push(pipe),
+                Err(_) => panic!("Invalid map entry {}", map_entry),
             }
         }
-        grid.push_row(grid_entries)
+        map.push(map_entries);
     }
-    grid
+    map
 }
 
-fn print_grid(grid: &Grid<GridEntry>) {
+fn print_map(map: &Vec<Vec<MapEntry>>) {
     println!("Grid:");
-    for grid_row in grid.iter_rows() {
-        for grid_entry in grid_row {
-            print!("{:#}", *grid_entry as u8 as char);
+    for map_row in map.iter() {
+        for map_entry in map_row {
+            print!("{:#}", *map_entry as u8 as char);
         }
         println!();
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-struct TreeNodeEntry {
-    grid_entry: GridEntry,
+struct ListNodeEntry {
+    map_entry: MapEntry,
     pos: (usize, usize),
     direction: Direction,
 }
 
-fn process_tree_entry(
-    grid: &Grid<GridEntry>,
-    arena: &mut Arena<TreeNodeEntry>,
-    current_node_id: NodeId,
+struct ListNode {
+    val: ListNodeEntry,
+    next: Option<Box<ListNode>>,
+}
+
+impl ListNode {
+    fn new(val: ListNodeEntry) -> ListNode {
+        ListNode { val, next: None }
+    }
+}
+
+fn process_list_entry(
+    map: Vec<Vec<MapEntry>>,
+    list_node: &mut ListNode,
     pri_dir: Direction,
     pri_dir_pos: (usize, usize),
     sec_dir: Direction,
     sec_dir_pos: (usize, usize),
 ) {
-    if let Some(next_pri_grid_entry) = grid.get(pri_dir_pos.0, pri_dir_pos.1) {
-        if next_pri_grid_entry == &GridEntry::Obstruction {
-            if let Some(next_sec_grid_entry) = grid.get(sec_dir_pos.0, sec_dir_pos.1) {
-                if next_sec_grid_entry != &GridEntry::Obstruction {
-                    let next_node_id = arena.new_node(TreeNodeEntry {
-                        grid_entry: *next_sec_grid_entry,
+    if let Some(next_pri_map_entry) = map.get(pri_dir_pos.0).and_then(|m| m.get(pri_dir_pos.1)) {
+        if next_pri_map_entry == &MapEntry::Obstruction {
+            if let Some(next_sec_map_entry) =
+                map.get(sec_dir_pos.0).and_then(|m| m.get(sec_dir_pos.1))
+            {
+                println!(
+                    "Found obstruction at pos {:?}, changing direction from {:?} to {:?} at new pos {:?}",
+                    pri_dir_pos, pri_dir, sec_dir, sec_dir_pos
+                );
+
+                if next_sec_map_entry != &MapEntry::Obstruction {
+                    list_node.next = Some(Box::new(ListNode::new(ListNodeEntry {
+                        map_entry: *next_sec_map_entry,
                         pos: sec_dir_pos,
                         direction: sec_dir,
-                    });
-                    current_node_id.append(next_node_id, arena);
-                    build_tree(grid, arena, next_node_id);
+                    })));
+                    build_list(map, list_node.next.as_mut().unwrap());
                 }
             }
         } else {
-            let next_node_id = arena.new_node(TreeNodeEntry {
-                grid_entry: *next_pri_grid_entry,
+            println!("Maintaining direction {:?}, pos {:?}", pri_dir, pri_dir_pos);
+            list_node.next = Some(Box::new(ListNode::new(ListNodeEntry {
+                map_entry: *next_pri_map_entry,
                 pos: pri_dir_pos,
                 direction: pri_dir,
-            });
-            current_node_id.append(next_node_id, arena);
-            build_tree(grid, arena, next_node_id);
+            })));
+            build_list(map, list_node.next.as_mut().unwrap());
         }
     }
 }
 
-fn build_tree(grid: &Grid<GridEntry>, arena: &mut Arena<TreeNodeEntry>, current_node_id: NodeId) {
-    let maybe_current_node = arena.get_mut(current_node_id);
-    if let Some(current_node) = maybe_current_node {
-        let current_node_entry = current_node.get();
-        let (current_row, current_col) = current_node_entry.pos;
-        if current_row as i32 - 1 < 0 {
-            return;
+fn build_list(map: Vec<Vec<MapEntry>>, list_node: &mut ListNode) {
+    let (current_row, current_col) = list_node.val.pos;
+    if current_row as i32 - 1 < 0 {
+        return;
+    }
+    if current_col as i32 - 1 < 0 {
+        return;
+    }
+    if detect_loop(list_node) {
+        return;
+    }
+    let n_dir = (current_row - 1, current_col);
+    let s_dir = (current_row + 1, current_col);
+    let e_dir = (current_row, current_col + 1);
+    let w_dir = (current_row, current_col - 1);
+    match list_node.val.direction {
+        Direction::N => {
+            process_list_entry(map, list_node, Direction::N, n_dir, Direction::E, e_dir);
         }
-        if current_col as i32 - 1 < 0 {
-            return;
+        Direction::S => {
+            process_list_entry(map, list_node, Direction::S, s_dir, Direction::W, w_dir);
         }
-        let n_dir = (current_row - 1, current_col);
-        let s_dir = (current_row + 1, current_col);
-        let e_dir = (current_row, current_col + 1);
-        let w_dir = (current_row, current_col - 1);
-        match current_node_entry.direction {
-            Direction::N => {
-                process_tree_entry(
-                    grid,
-                    arena,
-                    current_node_id,
-                    Direction::N,
-                    n_dir,
-                    Direction::E,
-                    e_dir,
-                );
-            }
-            Direction::S => {
-                process_tree_entry(
-                    grid,
-                    arena,
-                    current_node_id,
-                    Direction::S,
-                    s_dir,
-                    Direction::W,
-                    w_dir,
-                );
-            }
-            Direction::E => {
-                process_tree_entry(
-                    grid,
-                    arena,
-                    current_node_id,
-                    Direction::E,
-                    e_dir,
-                    Direction::S,
-                    s_dir,
-                );
-            }
-            Direction::W => {
-                process_tree_entry(
-                    grid,
-                    arena,
-                    current_node_id,
-                    Direction::W,
-                    w_dir,
-                    Direction::N,
-                    n_dir,
-                );
-            }
+        Direction::E => {
+            process_list_entry(map, list_node, Direction::E, e_dir, Direction::S, s_dir);
+        }
+        Direction::W => {
+            process_list_entry(map, list_node, Direction::W, w_dir, Direction::N, n_dir);
         }
     }
 }
@@ -185,92 +164,99 @@ fn get_distinct_pos(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
     let mut start_pos: Option<(usize, usize)> = None;
-    for ((row, col), pipe) in input.grid.indexed_iter() {
-        if *pipe == GridEntry::GuardN {
-            start_pos = Some((row, col));
+    for (col, map_row) in input.map.iter().enumerate() {
+        for (row, map_entry) in map_row.iter().enumerate() {
+            if *map_entry == MapEntry::GuardN {
+                start_pos = Some((col, row));
+                break;
+            }
         }
     }
-
     if let Some((row, col)) = start_pos {
-        let mut arena: Arena<TreeNodeEntry> = Arena::new();
-        let root_node = arena.new_node(TreeNodeEntry {
-            grid_entry: GridEntry::GuardN,
+        let mut list_root = ListNode::new(ListNodeEntry {
+            map_entry: input.map[col][row],
             pos: (row, col),
             direction: Direction::N,
         });
 
-        build_tree(&input.grid, &mut arena, root_node);
+        build_list(input.map, &mut list_root);
 
-        let traverser = root_node.traverse(&arena);
-        let mut visited_node_ids: HashSet<(usize, usize)> = HashSet::new();
-        for ev in traverser {
-            match ev {
-                indextree::NodeEdge::Start(node_id) => {
-                    if let Some(node) = arena.get(node_id) {
-                        let node_entry = node.get();
-                        visited_node_ids.insert(node_entry.pos);
-                    }
-                }
-                indextree::NodeEdge::End(_) => {}
-            }
+        let mut visited_pos: HashSet<(usize, usize)> = HashSet::new();
+        visited_pos.insert((row, col));
+        let mut iter = &list_root.next;
+        while iter.is_some() && iter.as_ref().unwrap().next.is_some() {
+            visited_pos.insert(iter.as_ref().unwrap().val.pos);
+            iter = &iter.as_ref().unwrap().next;
         }
-        visited_node_ids.len() as u32
+        // Add one to include to root node
+        return visited_pos.len() as u32 + 1;
     } else {
         panic!("Invalid start node");
     }
+}
+
+fn detect_loop(list_node: &mut ListNode) -> bool {
+    let mut visited_nodes: HashSet<(usize, usize)> = HashSet::new();
+    visited_nodes.insert(list_node.val.pos);
+
+    let mut iter = &list_node.next;
+    while iter.is_some() && iter.as_ref().unwrap().next.is_some() {
+        if visited_nodes.contains(&iter.as_ref().unwrap().val.pos) {
+            return true;
+        }
+        visited_nodes.insert(iter.as_ref().unwrap().val.pos);
+        iter = &iter.as_ref().unwrap().next;
+    }
+
+    false
 }
 
 fn get_time_loop_pos(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
     let mut start_pos: Option<(usize, usize)> = None;
-    for ((row, col), pipe) in input.grid.indexed_iter() {
-        if *pipe == GridEntry::GuardN {
-            start_pos = Some((row, col));
+    for (col, map_row) in input.map.iter().enumerate() {
+        for (row, map_entry) in map_row.iter().enumerate() {
+            if *map_entry == MapEntry::GuardN {
+                start_pos = Some((col, row));
+                break;
+            }
         }
     }
-
     if let Some((row, col)) = start_pos {
-        let sum_pot_time_loop_pos = input
-            .grid
-            .iter()
-            .filter(|pipe| **pipe == GridEntry::Clear)
-            .count();
+        let sum_pot_time_loop_pos = input.map.iter().fold(0, |acc, map_row| {
+            acc + map_row.iter().filter(|e| **e == MapEntry::Clear).count()
+        });
 
-        let mut visited_grid_pos: HashSet<(usize, usize)> = HashSet::new();
+        let mut visited_map_pos: HashSet<(usize, usize)> = HashSet::new();
 
-        for time_loop_pos in 0..sum_pot_time_loop_pos {
-            let mut grid = input.grid.clone();
+        for _ in 0..sum_pot_time_loop_pos {
+            let mut new_map = input.map.clone();
 
-            'outer: for i in 0..grid.rows() {
-                for j in 0..grid.cols() {
-                    if let Some(grid_entry) = grid.get_mut(i, j) {
-                        if !visited_grid_pos.contains(&(i, j)) {
-                            if *grid_entry == GridEntry::Clear {
-                                *grid_entry = GridEntry::Obstruction;
-                                visited_grid_pos.insert((i, j));
-                                break 'outer;
-                            }
+            'outer: for (row, map_row) in new_map.iter_mut().enumerate() {
+                for (col, map_entry) in map_row.iter_mut().enumerate() {
+                    if !visited_map_pos.contains(&(row, col)) {
+                        if *map_entry == MapEntry::Clear {
+                            *map_entry = MapEntry::Obstruction;
+                            visited_map_pos.insert((row, col));
+                            break 'outer;
                         }
                     }
                 }
             }
 
-            let mut arena: Arena<TreeNodeEntry> = Arena::new();
-            let root_node = arena.new_node(TreeNodeEntry {
-                grid_entry: GridEntry::GuardN,
+            let mut list_root = ListNode::new(ListNodeEntry {
+                map_entry: new_map[col][row],
                 pos: (row, col),
                 direction: Direction::N,
             });
 
-            println!("Time loop pos: {}", time_loop_pos);
-            build_tree(&grid, &mut arena, root_node);
+            build_list(new_map, &mut list_root);
         }
-
-        0
     } else {
         panic!("Invalid start node");
     }
+    0
 }
 
 #[cfg(test)]
@@ -292,7 +278,10 @@ mod tests {
 
     #[test]
     fn test_get_time_loop_pos_test01() {
-        assert_eq!(6, get_time_loop_pos("input/day06_test01.txt"));
+        // 8MB of stack space
+        stacker::grow(8 * 1024 * 1024, || {
+            assert_eq!(6, get_time_loop_pos("input/day06_test01.txt"));
+        });
     }
 
     #[test]
