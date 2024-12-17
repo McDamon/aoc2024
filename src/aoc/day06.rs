@@ -91,55 +91,66 @@ impl ListNode {
 }
 
 struct ListNodePos {
-    pri_pos: (usize, usize),
-    pri_dir: Direction,
-    sec_pos: (usize, usize),
-    sec_dir: Direction,
+    next_pos: (usize, usize),
+    next_dir: Direction,
+    alternate_dir: Direction,
+}
+
+#[derive(PartialEq)]
+struct VisitedNodeEntry {
+    pos: (usize, usize),
+    direction: Direction,
 }
 
 fn process_list_entry(
     map: &Vec<Vec<MapEntry>>,
     list_node: &mut ListNode,
-    visited_nodes: &mut Vec<(usize, usize)>,
-    loop_count: &mut usize,
+    visited_nodes: &mut Vec<VisitedNodeEntry>,
+    has_loop: &mut bool,
     list_node_pos: &ListNodePos,
 ) {
-    let (pri_dir_row, pri_dir_col) = list_node_pos.pri_pos;
-    let (sec_dir_row, sec_dir_col) = list_node_pos.sec_pos;
-    let next_pri_map_entry = map[pri_dir_row][pri_dir_col];
+    let (current_row, current_col) = list_node.val.pos;
+    let (next_pos_row, next_pos_col) = list_node_pos.next_pos;
+    let next_pri_map_entry = map[next_pos_row][next_pos_col];
     if next_pri_map_entry == MapEntry::Obstruction {
         /*println!(
-            "Found obstruction at pos {:?}, changing direction from {:?} to {:?} at new pos {:?}",
-            (pri_dir_row, pri_dir_col), list_node_pos.pri_dir, list_node_pos.sec_dir, (sec_dir_row, sec_dir_col)
+            "Found obstruction at pos {:?}, changing direction from {:?} to {:?}, pos {:?}",
+            (next_pos_row, next_pos_col),
+            list_node_pos.next_dir,
+            list_node_pos.alternate_dir,
+            (current_row, current_col)
         );*/
-        let next_sec_map_entry = map[sec_dir_row][sec_dir_col];
-        if next_sec_map_entry != MapEntry::Obstruction {
-            list_node.next = Some(Box::new(ListNode::new(ListNodeEntry {
-                map_entry: next_sec_map_entry,
-                pos: (sec_dir_row, sec_dir_col),
-                direction: list_node_pos.sec_dir,
-            })));
-            visited_nodes.push((sec_dir_row, sec_dir_col));
-            build_list(
-                map,
-                list_node.next.as_mut().unwrap(),
-                visited_nodes,
-                loop_count,
-            );
-        }
-    } else {
-        //println!("Maintaining direction {:?}, pos {:?}", list_node_pos.pri_dir, (pri_dir_row, pri_dir_col));
         list_node.next = Some(Box::new(ListNode::new(ListNodeEntry {
-            map_entry: next_pri_map_entry,
-            pos: (pri_dir_row, pri_dir_col),
-            direction: list_node_pos.pri_dir,
+            map_entry: MapEntry::Clear,
+            pos: (current_row, current_col),
+            direction: list_node_pos.alternate_dir,
         })));
-        visited_nodes.push((pri_dir_row, pri_dir_col));
         build_list(
             map,
             list_node.next.as_mut().unwrap(),
             visited_nodes,
-            loop_count,
+            has_loop,
+        );
+    } else {
+        /*println!(
+            "Maintaining direction {:?}, pos {:?}",
+            list_node_pos.next_dir,
+            (next_pos_row, next_pos_col)
+        );*/
+        list_node.next = Some(Box::new(ListNode::new(ListNodeEntry {
+            map_entry: next_pri_map_entry,
+            pos: (next_pos_row, next_pos_col),
+            direction: list_node_pos.next_dir,
+        })));
+        visited_nodes.push(VisitedNodeEntry {
+            pos: (next_pos_row, next_pos_col),
+            direction: list_node_pos.next_dir,
+        });
+        build_list(
+            map,
+            list_node.next.as_mut().unwrap(),
+            visited_nodes,
+            has_loop,
         );
     }
 }
@@ -147,8 +158,8 @@ fn process_list_entry(
 fn build_list(
     map: &Vec<Vec<MapEntry>>,
     list_node: &mut ListNode,
-    visited_nodes: &mut Vec<(usize, usize)>,
-    loop_count: &mut usize,
+    visited_nodes: &mut Vec<VisitedNodeEntry>,
+    has_loop: &mut bool,
 ) {
     let (current_row, current_col) = list_node.val.pos;
     if current_row as i32 - 1 < 0 {
@@ -164,10 +175,10 @@ fn build_list(
         return;
     }
     if detect_loop(visited_nodes) {
-        *loop_count += 1;
+        *has_loop = true;
         /*println!(
             "Detected loop at pos {:?}, loop count {}",
-            list_node.val.pos, *loop_count
+            list_node.val.pos, *has_loop
         );*/
         return;
     }
@@ -181,12 +192,11 @@ fn build_list(
                 map,
                 list_node,
                 visited_nodes,
-                loop_count,
+                has_loop,
                 &ListNodePos {
-                    pri_pos: n_dir,
-                    pri_dir: Direction::N,
-                    sec_pos: e_dir,
-                    sec_dir: Direction::E,
+                    next_pos: n_dir,
+                    next_dir: Direction::N,
+                    alternate_dir: Direction::E,
                 },
             );
         }
@@ -195,12 +205,11 @@ fn build_list(
                 map,
                 list_node,
                 visited_nodes,
-                loop_count,
+                has_loop,
                 &ListNodePos {
-                    pri_pos: s_dir,
-                    pri_dir: Direction::S,
-                    sec_pos: w_dir,
-                    sec_dir: Direction::W,
+                    next_pos: s_dir,
+                    next_dir: Direction::S,
+                    alternate_dir: Direction::W,
                 },
             );
         }
@@ -209,12 +218,11 @@ fn build_list(
                 map,
                 list_node,
                 visited_nodes,
-                loop_count,
+                has_loop,
                 &ListNodePos {
-                    pri_pos: e_dir,
-                    pri_dir: Direction::E,
-                    sec_pos: s_dir,
-                    sec_dir: Direction::S,
+                    next_pos: e_dir,
+                    next_dir: Direction::E,
+                    alternate_dir: Direction::S,
                 },
             );
         }
@@ -223,12 +231,11 @@ fn build_list(
                 map,
                 list_node,
                 visited_nodes,
-                loop_count,
+                has_loop,
                 &ListNodePos {
-                    pri_pos: w_dir,
-                    pri_dir: Direction::W,
-                    sec_pos: n_dir,
-                    sec_dir: Direction::N,
+                    next_pos: w_dir,
+                    next_dir: Direction::W,
+                    alternate_dir: Direction::N,
                 },
             );
         }
@@ -249,27 +256,31 @@ fn get_start_pos(map: &[Vec<MapEntry>]) -> Option<(usize, usize)> {
 fn get_distinct_pos_vec(
     map: &Vec<Vec<MapEntry>>,
     (start_row, start_col): (usize, usize),
-) -> (Vec<(usize, usize)>, usize) {
+) -> (HashSet<(usize, usize)>, bool) {
     let mut list_root = ListNode::new(ListNodeEntry {
         map_entry: map[start_row][start_col],
         pos: (start_row, start_col),
         direction: Direction::N,
     });
 
-    let mut visited_nodes: Vec<(usize, usize)> = vec![];
-    visited_nodes.push((start_row, start_col));
-    let mut loop_count = 0usize;
-    build_list(map, &mut list_root, &mut visited_nodes, &mut loop_count);
+    let mut visited_nodes: Vec<VisitedNodeEntry> = vec![];
+    visited_nodes.push(VisitedNodeEntry {
+        pos: (start_row, start_col),
+        direction: Direction::N,
+    });
+    let mut has_loop = false;
+    build_list(map, &mut list_root, &mut visited_nodes, &mut has_loop);
 
-    let unique_visited_nodes: HashSet<(usize, usize)> = visited_nodes.drain(..).collect();
-    (unique_visited_nodes.into_iter().collect(), loop_count)
+    let unique_visited_nodes: HashSet<(usize, usize)> =
+        visited_nodes.drain(..).map(|entry| entry.pos).collect();
+    (unique_visited_nodes, has_loop)
 }
 
 fn get_distinct_pos(input_file: &str) -> usize {
     let input = parse_input(input_file);
 
     if let Some((start_row, start_col)) = get_start_pos(&input.map) {
-        println!("Start node found at pos {:?}", (start_row, start_col));
+        //println!("Start node found at pos {:?}", (start_row, start_col));
 
         get_distinct_pos_vec(&input.map, (start_row, start_col))
             .0
@@ -280,7 +291,7 @@ fn get_distinct_pos(input_file: &str) -> usize {
 }
 
 // Implements Floyd's cycle-finding algorithm using indices
-fn detect_loop(visited_nodes: &mut [(usize, usize)]) -> bool {
+fn detect_loop(visited_nodes: &mut [VisitedNodeEntry]) -> bool {
     // Fast and slow indices initially points to the head
     let mut slow_index = 0;
     let mut fast_index = 0;
@@ -307,25 +318,31 @@ fn get_sum_time_loop_pos(input_file: &str) -> usize {
 
     let mut sum_time_loop_pos = 0usize;
     if let Some((start_row, start_col)) = get_start_pos(&input.map) {
-        println!("Start node found at pos {:?}", (start_row, start_col));
+        //println!("Start node found at pos {:?}", (start_row, start_col));
 
         let res = get_distinct_pos_vec(&input.map, (start_row, start_col));
 
-        println!("Processing {} potential maps ", res.0.len());
+        // Remove start node from map as instructed
+        let mut distinct_pos = res.0;
+        distinct_pos.remove(&(start_row, start_col));
 
-        for (visited_row, visited_col) in res.0 {
+        //println!("Processing {} potential maps ", distinct_pos.len());
+
+        for (visited_row, visited_col) in distinct_pos {
             let mut pot_map = input.map.clone();
             pot_map[visited_row][visited_col] = MapEntry::Obstruction;
 
             /*println!(
                 "Processing map with new obstruction at {:?}",
                 (visited_row, visited_col)
-            );*/
+            );
 
-            //print_map(&pot_map);
+            print_map(&pot_map);*/
 
             let new_res = get_distinct_pos_vec(&pot_map, (start_row, start_col));
-            sum_time_loop_pos += new_res.1;
+            if new_res.1 {
+                sum_time_loop_pos += 1;
+            }
         }
     } else {
         panic!("Invalid start node");
@@ -341,37 +358,49 @@ mod tests {
     #[test]
     fn test_get_distinct_pos_vec_test02() {
         let input = parse_input("input/day06_test02.txt");
-        assert_eq!(1, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test03() {
         let input = parse_input("input/day06_test03.txt");
-        assert_eq!(1, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test04() {
         let input = parse_input("input/day06_test04.txt");
-        assert_eq!(1, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test05() {
         let input = parse_input("input/day06_test05.txt");
-        assert_eq!(1, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test06() {
         let input = parse_input("input/day06_test06.txt");
-        assert_eq!(1, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test07() {
         let input = parse_input("input/day06_test07.txt");
-        assert_eq!(1, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+    }
+
+    #[test]
+    fn test_get_distinct_pos_vec_test08() {
+        let input = parse_input("input/day06_test08.txt");
+        assert_eq!(false, get_distinct_pos_vec(&input.map, (6, 4)).1);
+    }
+
+    #[test]
+    fn test_get_distinct_pos_vec_test09() {
+        let input = parse_input("input/day06_test09.txt");
+        assert_eq!(false, get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
@@ -381,10 +410,7 @@ mod tests {
 
     #[test]
     fn test_get_distinct_pos() {
-        // Requires 8MB of stack space
-        stacker::grow(8 * 1024 * 1024, || {
-            assert_eq!(5564, get_distinct_pos("input/day06.txt"));
-        });
+        assert_eq!(5564, get_distinct_pos("input/day06.txt"));
     }
 
     #[test]
@@ -392,11 +418,11 @@ mod tests {
         assert_eq!(6, get_sum_time_loop_pos("input/day06_test01.txt"));
     }
 
+    // This test takes a while so ignore in CI
+
+    #[ignore]
     #[test]
     fn test_get_sum_time_loop_pos() {
-        // Requires 8MB of stack space
-        stacker::grow(1024 * 1024 * 1024, || {
-            assert_eq!(0, get_sum_time_loop_pos("input/day06.txt"));
-        });
+        assert_eq!(1976, get_sum_time_loop_pos("input/day06.txt"));
     }
 }
