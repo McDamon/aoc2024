@@ -410,7 +410,10 @@ mod tests {
 
     #[test]
     fn test_get_distinct_pos() {
-        assert_eq!(5564, get_distinct_pos("input/day06.txt"));
+        // Requires 8MB of stack space
+        stacker::grow(8 * 1024 * 1024, || {
+            assert_eq!(5564, get_distinct_pos("input/day06.txt"));
+        });
     }
 
     #[test]
