@@ -426,6 +426,9 @@ mod tests {
     #[ignore]
     #[test]
     fn test_get_sum_time_loop_pos() {
-        assert_eq!(1976, get_sum_time_loop_pos("input/day06.txt"));
+        // Requires 16MB of stack space
+        stacker::grow(16 * 1024 * 1024, || {
+            assert_eq!(1976, get_sum_time_loop_pos("input/day06.txt"));
+        });
     }
 }
