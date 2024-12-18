@@ -50,19 +50,28 @@ fn is_valid_calibration_result(equation: &CalibrationEquation) -> bool {
         .multi_cartesian_product()
         .collect();
 
+    let first_val = *equation.terms.first().unwrap_or(&0);
+
     for operator_seq in operator_seqs {
-        let result =
-            equation
-                .terms
-                .iter()
-                .zip(operator_seq.iter())
-                .fold(0, |acc, (term, operator)| match operator {
-                    Operator::Add => acc + term,
-                    Operator::Multiply => acc * term,
-                });
+        let result = equation.terms.iter().zip(operator_seq.iter()).skip(1).fold(
+            first_val,
+            |acc, (term, operator)| match operator {
+                Operator::Add => {
+                    //println!("{} + {} = {}", acc, term, acc + term);
+                    acc + term
+                }
+                Operator::Multiply => {
+                    //println!("{} * {} = {}", acc, term, acc * term);
+                    acc * term
+                }
+            },
+        );
 
         if result == equation.result {
+            //println!("{} == {}", result, equation.result);
             return true;
+        } else {
+            //println!("{} != {}", result, equation.result);
         }
     }
 
@@ -75,6 +84,7 @@ fn get_total_calibration_result(input_file: &str) -> u64 {
     let mut total_calibration_result = 0;
 
     for equation in input.equations {
+        //println!("{:?}", equation);
         if is_valid_calibration_result(&equation) {
             total_calibration_result += equation.result;
         }
@@ -184,6 +194,11 @@ mod tests {
     }
 
     #[test]
+    fn test_get_total_calibration_result_test07() {
+        assert_eq!(3267, get_total_calibration_result("input/day07_test07.txt"));
+    }
+
+    #[test]
     fn test_get_total_calibration_result_with_concat_test01() {
         assert_eq!(
             11387,
@@ -218,7 +233,7 @@ mod tests {
     #[test]
     fn test_get_total_calibration_result_with_concat_test05() {
         assert_eq!(
-            0,
+            12,
             get_total_calibration_result_with_concat("input/day07_test05.txt")
         );
     }
@@ -226,8 +241,16 @@ mod tests {
     #[test]
     fn test_get_total_calibration_result_with_concat_test06() {
         assert_eq!(
-            0,
+            507905413443,
             get_total_calibration_result_with_concat("input/day07_test06.txt")
+        );
+    }
+
+    #[test]
+    fn test_get_total_calibration_result_with_concat_test07() {
+        assert_eq!(
+            3267,
+            get_total_calibration_result_with_concat("input/day07_test07.txt")
         );
     }
 
