@@ -358,49 +358,49 @@ mod tests {
     #[test]
     fn test_get_distinct_pos_vec_test02() {
         let input = parse_input("input/day06_test02.txt");
-        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test03() {
         let input = parse_input("input/day06_test03.txt");
-        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test04() {
         let input = parse_input("input/day06_test04.txt");
-        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test05() {
         let input = parse_input("input/day06_test05.txt");
-        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test06() {
         let input = parse_input("input/day06_test06.txt");
-        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test07() {
         let input = parse_input("input/day06_test07.txt");
-        assert_eq!(true, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test08() {
         let input = parse_input("input/day06_test08.txt");
-        assert_eq!(false, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(!get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
     fn test_get_distinct_pos_vec_test09() {
         let input = parse_input("input/day06_test09.txt");
-        assert_eq!(false, get_distinct_pos_vec(&input.map, (6, 4)).1);
+        assert!(!get_distinct_pos_vec(&input.map, (6, 4)).1);
     }
 
     #[test]
