@@ -20,6 +20,7 @@ struct CalibrationEquation {
 enum Operator {
     Add,
     Multiply,
+    Concat,
 }
 
 fn parse_input(input_file: &str) -> Input {
@@ -64,6 +65,7 @@ fn is_valid_calibration_result(equation: &CalibrationEquation) -> bool {
                     //println!("{} * {} = {}", acc, term, acc * term);
                     acc * term
                 }
+                Operator::Concat => 0,
             },
         );
 
@@ -93,58 +95,77 @@ fn get_total_calibration_result(input_file: &str) -> u64 {
     total_calibration_result
 }
 
+fn is_valid_calibration_result_concat(equation: &CalibrationEquation) -> bool {
+    let operators = [Operator::Add, Operator::Multiply, Operator::Concat];
+    let operator_seqs: Vec<_> = iter::repeat(operators.iter())
+        .take(equation.terms.len())
+        .multi_cartesian_product()
+        .collect();
+
+    for operator_seq in operator_seqs {
+        for i in 0..operator_seq.len() {
+            let (left_operator_seq, right_operator_seq) = operator_seq.split_at(i);
+            let (left_terms, right_terms) = equation.terms.split_at(i);
+
+            let left_result =
+                left_terms
+                    .iter()
+                    .zip(left_operator_seq.iter())
+                    .fold(0, |acc, (term, operator)| match operator {
+                        Operator::Add => {
+                            //println!("left {} + {} = {}", acc, term, acc + term);
+                            acc + term
+                        }
+                        Operator::Multiply => {
+                            //println!("left {} * {} = {}", acc, term, acc * term);
+                            acc * term
+                        }
+                        Operator::Concat => {
+                            let concat = (acc.to_string() + &term.to_string()).parse().unwrap();
+                            concat
+                        }
+                    });
+
+            let right_result = right_terms.iter().zip(right_operator_seq.iter()).fold(
+                left_result,
+                |acc, (term, operator)| match operator {
+                    Operator::Add => {
+                        //println!("right {} + {} = {}", acc, term, acc + term);
+                        acc + term
+                    }
+                    Operator::Multiply => {
+                        //println!("right {} * {} = {}", acc, term, acc * term);
+                        acc * term
+                    }
+                    Operator::Concat => {
+                        let concat = (acc.to_string() + &term.to_string()).parse().unwrap();
+                        concat
+                    }
+                },
+            );
+
+            if right_result == equation.result {
+                //println!("{} == {}", right_result, equation.result);
+                return true;
+            } else {
+                //println!("{} != {}", right_result, equation.result);
+            }
+        }
+    }
+    false
+}
+
 fn get_total_calibration_result_with_concat(input_file: &str) -> u64 {
     let input = parse_input(input_file);
 
     let mut total_calibration_result = 0;
 
-    let operators = [Operator::Add, Operator::Multiply];
 
     for equation in input.equations {
         if is_valid_calibration_result(&equation) {
             total_calibration_result += equation.result;
-        } else {
-            let operator_seqs: Vec<_> = iter::repeat(operators.iter())
-                .take(equation.terms.len())
-                .multi_cartesian_product()
-                .collect();
-
-            for operator_seq in operator_seqs {
-                for i in 0..operator_seq.len() {
-                    let (left_operator_seq, right_operator_seq) = operator_seq.split_at(i);
-                    let (left_terms, right_terms) = equation.terms.split_at(i);
-
-                    let left_result = left_terms.iter().zip(left_operator_seq.iter()).fold(
-                        0,
-                        |acc, (term, operator)| match operator {
-                            Operator::Add => acc + term,
-                            Operator::Multiply => acc * term,
-                        },
-                    );
-
-                    let right_result = right_terms
-                        .iter()
-                        .enumerate()
-                        .map(|(index, &term)| {
-                            if index == 0 {
-                                (left_result.to_string() + &term.to_string())
-                                    .parse()
-                                    .unwrap()
-                            } else {
-                                term
-                            }
-                        })
-                        .zip(right_operator_seq.iter())
-                        .fold(0, |acc, (term, operator)| match operator {
-                            Operator::Add => acc + term,
-                            Operator::Multiply => acc * term,
-                        });
-
-                    if right_result == equation.result {
-                        total_calibration_result += right_result;
-                    }
-                }
-            }
+        } else if is_valid_calibration_result_concat(&equation) {
+            total_calibration_result += equation.result;
         }
     }
 
@@ -199,6 +220,16 @@ mod tests {
     }
 
     #[test]
+    fn test_get_total_calibration_result_test08() {
+        assert_eq!(10, get_total_calibration_result("input/day07_test08.txt"));
+    }
+
+    #[test]
+    fn test_get_total_calibration_result_test09() {
+        assert_eq!(0, get_total_calibration_result("input/day07_test09.txt"));
+    }
+
+    #[test]
     fn test_get_total_calibration_result_with_concat_test01() {
         assert_eq!(
             11387,
@@ -233,7 +264,7 @@ mod tests {
     #[test]
     fn test_get_total_calibration_result_with_concat_test05() {
         assert_eq!(
-            12,
+            2,
             get_total_calibration_result_with_concat("input/day07_test05.txt")
         );
     }
@@ -255,9 +286,28 @@ mod tests {
     }
 
     #[test]
+    fn test_get_total_calibration_result_with_concat_test08() {
+        assert_eq!(
+            10,
+            get_total_calibration_result_with_concat("input/day07_test08.txt")
+        );
+    }
+
+    #[test]
+    fn test_get_total_calibration_result_with_concat_test09() {
+        assert_eq!(
+            123,
+            get_total_calibration_result_with_concat("input/day07_test09.txt")
+        );
+    }
+
+    // This test takes a while so ignore in CI
+
+    #[ignore]
+    #[test]
     fn test_get_total_distance_with_concat() {
         assert_eq!(
-            0,
+            105517128211543,
             get_total_calibration_result_with_concat("input/day07.txt")
         );
     }
