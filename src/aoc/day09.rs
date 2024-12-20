@@ -6,17 +6,16 @@ struct Input {
     disk: Vec<DiskEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 enum DiskEntryType {
     File,
     FreeSpace,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct DiskEntry {
     id: usize,
-    entry: DiskEntryType,
-    len: usize,
+    entry: DiskEntryType
 }
 
 fn parse_input(input_file: &str) -> Input {
@@ -29,82 +28,70 @@ fn parse_input(input_file: &str) -> Input {
         let disk: Vec<DiskEntry> = chars
             .into_iter()
             .enumerate()
-            .map(|(i, c)| {
+            .fold(vec![], |mut acc: Vec<DiskEntry>, (i, c)| {
                 if i % 2 != 0 {
                     id += 1;
                 }
-                DiskEntry {
-                    id: id,
-                    entry: if i % 2 == 0 {
-                        DiskEntryType::File
-                    } else {
-                        DiskEntryType::FreeSpace
-                    },
-                    len: c.to_string().parse::<usize>().unwrap_or(0),
+                for _ in 0..c.to_digit(10).unwrap_or(0) {
+                    acc.push(DiskEntry {
+                        id: id,
+                        entry: if i % 2 == 0 {
+                            DiskEntryType::File
+                        } else {
+                            DiskEntryType::FreeSpace
+                        },
+                    });
                 }
-            })
-            .collect();
+                acc
+            });
         Input { disk }
     } else {
         panic!("Invalid input file: {}", input_file);
     }
 }
 
-fn get_blocks(disk: &Vec<DiskEntry>) -> String {
-    let mut blocks = String::new();
-    for entry in disk {
-        match entry.entry {
-            DiskEntryType::File => {
-                blocks.push_str(&entry.id.to_string().repeat(entry.len));
-            }
-            DiskEntryType::FreeSpace => {
-                blocks.push_str(&".".repeat(entry.len));
-            }
-        }
-    }
-    blocks
+fn find_first_free_space_block(blocks: &Vec<DiskEntry>) -> Option<usize> {
+    blocks.iter().position(|block| matches!(block.entry, DiskEntryType::FreeSpace))
 }
 
-fn is_file_block_gaps(blocks: &str) -> bool {
-    let free_space_count = blocks.chars().rev().take_while(|&c| c == '.').count();
-    free_space_count != blocks.chars().filter(|&c| c == '.').count()
+fn find_last_file_block(blocks: &Vec<DiskEntry>) -> Option<usize> {
+    blocks.iter().rposition(|block| matches!(block.entry, DiskEntryType::File))
 }
 
-fn calc_checksum(blocks: &str) -> u32 {
-    let mut checksum = 0u32;
-    for (i, c) in blocks.chars().enumerate() {
-        if c.is_ascii_digit() {
-            checksum += i as u32 * c.to_digit(10).unwrap();
-        }
-    }
-    checksum
+fn has_file_block_gaps(blocks: &Vec<DiskEntry>) -> bool {
+    let free_space_count = blocks.iter().rev().take_while(|block| block.entry == DiskEntryType::FreeSpace).count();
+    free_space_count != blocks.into_iter().filter(|block| block.entry == DiskEntryType::FreeSpace).count()
 }
+
+fn calc_checksum(blocks: &Vec<DiskEntry>) -> u32 {
+    blocks.into_iter()
+        .enumerate()
+        .filter_map(|(i, block)| Some(i as u32 * block.id as u32))
+        .sum()
+}
+
 
 fn get_checksum(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
-    let mut blocks = get_blocks(&input.disk);
+    let mut blocks = input.disk.clone();
 
     loop {
-        println!("{}", blocks);
-        if is_file_block_gaps(&blocks) {
-            if let Some(first_free_space_block_pos) = blocks.find(".") {
-                if let Some(last_file_block_pos) = blocks.rfind(|c: char| c.is_ascii_digit()) {
-                    let first_free_space_block =
-                        blocks.chars().nth(first_free_space_block_pos).unwrap();
-                    let last_file_block = blocks.chars().nth(last_file_block_pos).unwrap();
+        if has_file_block_gaps(&blocks) {
+            if let Some(first_free_space_block_pos) = find_first_free_space_block(&blocks) {
+                if let Some(last_file_block_pos) = find_last_file_block(&blocks) {
+                    let first_free_space_block = blocks[first_free_space_block_pos].clone();
+                    let last_file_block = blocks[last_file_block_pos].clone();
 
-                    let mut blocks_vec: Vec<char> = blocks.chars().collect();
-                    blocks_vec[first_free_space_block_pos] = last_file_block;
-                    blocks_vec[last_file_block_pos] = first_free_space_block;
-                    blocks = blocks_vec.into_iter().collect();
+                    blocks[first_free_space_block_pos] = last_file_block.clone();
+                    blocks[last_file_block_pos] = first_free_space_block.clone();
                 }
             }
         } else {
             break;
         }
     }
-
+    
     calc_checksum(&blocks)
 }
 
