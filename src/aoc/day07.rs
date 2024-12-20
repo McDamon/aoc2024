@@ -120,10 +120,7 @@ fn is_valid_calibration_result_concat(equation: &CalibrationEquation) -> bool {
                             //println!("left {} * {} = {}", acc, term, acc * term);
                             acc * term
                         }
-                        Operator::Concat => {
-                            let concat = (acc.to_string() + &term.to_string()).parse().unwrap();
-                            concat
-                        }
+                        Operator::Concat => (acc.to_string() + &term.to_string()).parse().unwrap(),
                     });
 
             let right_result = right_terms.iter().zip(right_operator_seq.iter()).fold(
@@ -137,10 +134,7 @@ fn is_valid_calibration_result_concat(equation: &CalibrationEquation) -> bool {
                         //println!("right {} * {} = {}", acc, term, acc * term);
                         acc * term
                     }
-                    Operator::Concat => {
-                        let concat = (acc.to_string() + &term.to_string()).parse().unwrap();
-                        concat
-                    }
+                    Operator::Concat => (acc.to_string() + &term.to_string()).parse().unwrap(),
                 },
             );
 
@@ -160,11 +154,8 @@ fn get_total_calibration_result_with_concat(input_file: &str) -> u64 {
 
     let mut total_calibration_result = 0;
 
-
     for equation in input.equations {
-        if is_valid_calibration_result(&equation) {
-            total_calibration_result += equation.result;
-        } else if is_valid_calibration_result_concat(&equation) {
+        if is_valid_calibration_result(&equation) || is_valid_calibration_result_concat(&equation) {
             total_calibration_result += equation.result;
         }
     }

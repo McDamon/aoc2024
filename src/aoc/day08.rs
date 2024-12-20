@@ -1,6 +1,6 @@
 // https://adventofcode.com/2024/day/8
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::utils::get_lines;
 
@@ -48,23 +48,15 @@ fn get_unique_antinodes(input_file: &str) -> u32 {
             row.iter()
                 .enumerate()
                 .filter(|(_, c)| **c != '.')
-                .map(move |(j, &val)| {
-                    (
-                        val,
-                        Node {
-                            pos: (i, j),
-                            val: val,
-                        },
-                    )
-                })
+                .map(move |(j, &val)| (val, Node { pos: (i, j), val }))
         })
         .fold(HashMap::new(), |mut acc, (key, node)| {
-            acc.entry(key).or_insert(Vec::new()).push(node);
+            acc.entry(key).or_default().push(node);
             acc
         });
 
     let mut unique_antinodes: u32 = 0;
-
+    let mut antinode_pos_set: HashSet<(usize, usize)> = HashSet::new();
     let mut antinode_map = input.map.clone();
 
     for (_c, nodes) in node_map {
@@ -85,44 +77,44 @@ fn get_unique_antinodes(input_file: &str) -> u32 {
                     node, other_node, row_diff, col_diff
                 );*/
 
-                let antinode_pos: Option<(usize, usize)> = if row_diff.is_negative()
-                    && col_diff.is_negative()
-                {
-                    let new_row = row as i32 - row_diff.abs();
-                    let new_col = col as i32 - col_diff.abs();
-                    if new_row < 0 || new_col < 0 {
-                        None
+                let antinode_pos: Option<(usize, usize)> =
+                    if row_diff.is_negative() && col_diff.is_negative() {
+                        let new_row = row as i32 - row_diff.abs();
+                        let new_col = col as i32 - col_diff.abs();
+                        if new_row < 0 || new_col < 0 {
+                            None
+                        } else {
+                            Some((new_row as usize, new_col as usize))
+                        }
+                    } else if row_diff.is_negative() && col_diff.is_positive() {
+                        let new_row = row as i32 - row_diff.abs();
+                        let new_col = col as i32 + col_diff.abs();
+                        if new_row < 0 || new_col >= antinode_map[0].len() as i32 {
+                            None
+                        } else {
+                            Some((new_row as usize, new_col as usize))
+                        }
+                    } else if row_diff.is_positive() && col_diff.is_negative() {
+                        let new_row = row as i32 + row_diff.abs();
+                        let new_col = col as i32 - col_diff.abs();
+                        if new_row >= antinode_map.len() as i32 || new_col < 0 {
+                            None
+                        } else {
+                            Some((new_row as usize, new_col as usize))
+                        }
+                    } else if row_diff.is_positive() && col_diff.is_positive() {
+                        let new_row = row as i32 + row_diff.abs();
+                        let new_col = col as i32 + col_diff.abs();
+                        if new_row >= antinode_map.len() as i32
+                            || new_col >= antinode_map[0].len() as i32
+                        {
+                            None
+                        } else {
+                            Some((new_row as usize, new_col as usize))
+                        }
                     } else {
-                        Some((new_row as usize, new_col as usize))
-                    }
-                } else if row_diff.is_negative() && col_diff.is_positive() {
-                    let new_row = row as i32 - row_diff.abs();
-                    let new_col = col as i32 + col_diff.abs();
-                    if new_row < 0 || new_col >= antinode_map[0].len() as i32 {
                         None
-                    } else {
-                        Some((new_row as usize, new_col as usize))
-                    }
-                } else if row_diff.is_positive() && col_diff.is_negative() {
-                    let new_row = row as i32 + row_diff.abs();
-                    let new_col = col as i32 - col_diff.abs();
-                    if new_row >= antinode_map.len() as i32 || new_col < 0 {
-                        None
-                    } else {
-                        Some((new_row as usize, new_col as usize))
-                    }
-                } else if row_diff.is_positive() && col_diff.is_positive() {
-                    let new_row = row as i32 + row_diff.abs();
-                    let new_col = col as i32 + col_diff.abs();
-                    if new_row >= antinode_map.len() as i32 || new_col >= antinode_map[0].len() as i32
-                    {
-                        None
-                    } else {
-                        Some((new_row as usize, new_col as usize))
-                    }
-                } else {
-                    None
-                };
+                    };
 
                 if let Some((antinode_row, antinode_col)) = antinode_pos {
                     if let Some(map_node) = antinode_map
@@ -131,17 +123,34 @@ fn get_unique_antinodes(input_file: &str) -> u32 {
                     {
                         match *map_node {
                             '.' => {
-                                antinode_map[antinode_row][antinode_col] = '#';
-                                unique_antinodes += 1;
-                            },
+                                if !antinode_pos_set.contains(&(antinode_row, antinode_col)) {
+                                    println!(
+                                        "Found new antinode: {:?}, {:?}",
+                                        *map_node,
+                                        (antinode_row, antinode_col)
+                                    );
+                                    antinode_map[antinode_row][antinode_col] = '#';
+                                    unique_antinodes += 1;
+                                    antinode_pos_set.insert((antinode_row, antinode_col));
+                                }
+                            }
                             '#' => {
                                 println!(
-                                    "Antinode already occupied: {:?}",
+                                    "Already occupied antinode: {:?}, {:?}",
+                                    *map_node,
                                     (antinode_row, antinode_col)
                                 );
                             }
                             _ => {
-                                unique_antinodes += 1;
+                                if !antinode_pos_set.contains(&(antinode_row, antinode_col)) {
+                                    println!(
+                                        "Found overlapping antinode: {:?}, {:?}",
+                                        *map_node,
+                                        (antinode_row, antinode_col)
+                                    );
+                                    unique_antinodes += 1;
+                                    antinode_pos_set.insert((antinode_row, antinode_col));
+                                }
                             }
                         }
                     } else {
@@ -178,11 +187,11 @@ mod tests {
 
     #[test]
     fn test_get_unique_antinodes_test04() {
-        assert_eq!(3, get_unique_antinodes("input/day08_test04.txt"));
+        assert_eq!(4, get_unique_antinodes("input/day08_test04.txt"));
     }
 
     #[test]
     fn test_get_unique_antinodes() {
-        assert_eq!(0, get_unique_antinodes("input/day08.txt"));
+        assert_eq!(261, get_unique_antinodes("input/day08.txt"));
     }
 }
