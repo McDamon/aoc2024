@@ -318,6 +318,6 @@ mod tests {
     
     #[test]
     fn test_get_unique_antinodes_with_hr() {
-        assert_eq!(0, get_unique_antinodes_with_hr("input/day08.txt"));
+        assert_eq!(898, get_unique_antinodes_with_hr("input/day08.txt"));
     }
 }
