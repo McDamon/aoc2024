@@ -167,6 +167,31 @@ fn has_file_block_gaps_with_len(blocks: &[DiskEntryWithLen]) -> bool {
     free_space_count_at_end != free_space_count
 }
 
+fn find_first_free_space_block_with_len(blocks: &[DiskEntryWithLen]) -> Option<usize> {
+    blocks
+        .iter()
+        .position(|block| {
+            matches!(block.entry, DiskEntryType::FreeSpace)
+        })
+}
+
+fn find_last_file_block_with_len(blocks: &[DiskEntryWithLen]) -> Option<usize> {
+    blocks
+        .iter()
+        .rposition(|block| {
+            matches!(block.entry, DiskEntryType::File)
+        })
+}
+
+fn calc_checksum_with_len(blocks: &[DiskEntryWithLen]) -> usize {
+    blocks
+        .iter()
+        .enumerate()
+        .filter(|(_, block)| block.entry != DiskEntryType::FreeSpace)
+        .map(|(i, block)| i * block.id.unwrap_or(0))
+        .sum()
+}
+
 fn get_checksum_whole_files(input_file: &str) -> usize {
     let input = parse_input_part_two(input_file);
 
@@ -174,8 +199,9 @@ fn get_checksum_whole_files(input_file: &str) -> usize {
 
     loop {
         if has_file_block_gaps_with_len(&blocks) {
-            if let Some(first_free_space_block_pos) = find_first_free_space_block(&blocks) {
-                if let Some(last_file_block_pos) = find_last_file_block(&blocks) {
+            if let Some(first_free_space_block_pos) = find_first_free_space_block_with_len(&blocks)
+            {
+                if let Some(last_file_block_pos) = find_last_file_block_with_len(&blocks) {
                     let first_free_space_block = blocks[first_free_space_block_pos].clone();
                     let last_file_block = blocks[last_file_block_pos].clone();
 
@@ -190,7 +216,7 @@ fn get_checksum_whole_files(input_file: &str) -> usize {
 
     //println!("{:?}", blocks);
 
-    calc_checksum(&blocks)
+    calc_checksum_with_len(&blocks)
 }
 
 #[cfg(test)]
