@@ -51,19 +51,19 @@ fn parse_input(input_file: &str) -> Input {
     }
 }
 
-fn find_first_free_space_block(blocks: &Vec<DiskEntry>) -> Option<usize> {
+fn find_first_free_space_block(blocks: &[DiskEntry]) -> Option<usize> {
     blocks
         .iter()
         .position(|block| matches!(block.entry, DiskEntryType::FreeSpace))
 }
 
-fn find_last_file_block(blocks: &Vec<DiskEntry>) -> Option<usize> {
+fn find_last_file_block(blocks: &[DiskEntry]) -> Option<usize> {
     blocks
         .iter()
         .rposition(|block| matches!(block.entry, DiskEntryType::File))
 }
 
-fn has_file_block_gaps(blocks: &Vec<DiskEntry>) -> bool {
+fn has_file_block_gaps(blocks: &[DiskEntry]) -> bool {
     let free_space_count = blocks
         .iter()
         .rev()
@@ -71,17 +71,17 @@ fn has_file_block_gaps(blocks: &Vec<DiskEntry>) -> bool {
         .count();
     free_space_count
         != blocks
-            .into_iter()
+            .iter()
             .filter(|block| block.entry == DiskEntryType::FreeSpace)
             .count()
 }
 
-fn calc_checksum(blocks: &Vec<DiskEntry>) -> usize {
+fn calc_checksum(blocks: &[DiskEntry]) -> usize {
     blocks
-        .into_iter()
+        .iter()
         .enumerate()
         .filter(|(_, block)| block.entry != DiskEntryType::FreeSpace)
-        .filter_map(|(i, block)| Some(i as usize * block.id.unwrap_or(0) as usize))
+        .map(|(i, block)| i * block.id.unwrap_or(0))
         .sum()
 }
 
@@ -135,8 +135,11 @@ mod tests {
         assert_eq!(57, get_checksum("input/day09_test04.txt"));
     }
 
+    // This test takes a while so ignore in CI
+
+    #[ignore]
     #[test]
     fn test_get_checksum() {
-        assert_eq!(0, get_checksum("input/day09.txt"));
+        assert_eq!(6435922584968, get_checksum("input/day09.txt"));
     }
 }

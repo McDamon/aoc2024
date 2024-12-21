@@ -124,44 +124,44 @@ fn get_unique_antinodes(input_file: &str) -> u32 {
                         match *map_node {
                             '.' => {
                                 if !antinode_pos_set.contains(&(antinode_row, antinode_col)) {
-                                    println!(
+                                    /*println!(
                                         "Found new antinode: {:?}, {:?}",
                                         *map_node,
                                         (antinode_row, antinode_col)
-                                    );
+                                    );*/
                                     antinode_map[antinode_row][antinode_col] = '#';
                                     unique_antinodes += 1;
                                     antinode_pos_set.insert((antinode_row, antinode_col));
                                 }
                             }
                             '#' => {
-                                println!(
+                                /*println!(
                                     "Already occupied antinode: {:?}, {:?}",
                                     *map_node,
                                     (antinode_row, antinode_col)
-                                );
+                                );*/
                             }
                             _ => {
                                 if !antinode_pos_set.contains(&(antinode_row, antinode_col)) {
-                                    println!(
+                                    /*println!(
                                         "Found overlapping antinode: {:?}, {:?}",
                                         *map_node,
                                         (antinode_row, antinode_col)
-                                    );
+                                    );*/
                                     unique_antinodes += 1;
                                     antinode_pos_set.insert((antinode_row, antinode_col));
                                 }
                             }
                         }
                     } else {
-                        println!("Antinode out of bounds: {:?}", (antinode_row, antinode_col));
+                        //println!("Antinode out of bounds: {:?}", (antinode_row, antinode_col));
                     };
                 }
             }
         }
     }
 
-    print_map(&antinode_map);
+    //print_map(&antinode_map);
 
     unique_antinodes
 }
@@ -230,44 +230,44 @@ fn get_unique_antinodes_with_hr(input_file: &str) -> u32 {
                         match *map_node {
                             '.' => {
                                 if !antinode_pos_set.contains(&(antinode_row, antinode_col)) {
-                                    println!(
+                                    /*println!(
                                         "Found new antinode: {:?}, {:?}",
                                         *map_node,
                                         (antinode_row, antinode_col)
-                                    );
+                                    );*/
                                     antinode_map[antinode_row][antinode_col] = '#';
                                     unique_antinodes += 1;
                                     antinode_pos_set.insert((antinode_row, antinode_col));
                                 }
                             }
                             '#' => {
-                                println!(
+                                /*println!(
                                     "Already occupied antinode: {:?}, {:?}",
                                     *map_node,
                                     (antinode_row, antinode_col)
-                                );
+                                );*/
                             }
                             _ => {
                                 if !antinode_pos_set.contains(&(antinode_row, antinode_col)) {
-                                    println!(
+                                    /*println!(
                                         "Found overlapping antinode: {:?}, {:?}",
                                         *map_node,
                                         (antinode_row, antinode_col)
-                                    );
+                                    );*/
                                     unique_antinodes += 1;
                                     antinode_pos_set.insert((antinode_row, antinode_col));
                                 }
                             }
                         }
                     } else {
-                        println!("Antinode out of bounds: {:?}", (antinode_row, antinode_col));
+                        //println!("Antinode out of bounds: {:?}", (antinode_row, antinode_col));
                     };
                 }
             }
         }
     }
 
-    print_map(&antinode_map);
+    //print_map(&antinode_map);
 
     unique_antinodes
 }
