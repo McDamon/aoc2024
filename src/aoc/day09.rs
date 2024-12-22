@@ -10,7 +10,7 @@ struct InputPartTwo {
     disk: Vec<DiskEntryWithLen>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum DiskEntryType {
     File,
     FreeSpace,
@@ -22,7 +22,7 @@ struct DiskEntry {
     entry: DiskEntryType,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct DiskEntryWithLen {
     id: Option<usize>,
     entry: DiskEntryType,
@@ -134,24 +134,62 @@ fn get_checksum(input_file: &str) -> usize {
     let mut blocks = input.disk.clone();
 
     loop {
-        if let Some(last_whole_file) = find_last_whole_file(&blocks) {
-            if let Some(first_free_space) = find_first_free_space(&blocks) {
+        if has_file_block_gaps(&blocks) {
+            if let Some(first_free_space_block_pos) = find_first_free_space_block(&blocks)
+                && let Some(last_file_block_pos) = find_last_file_block(&blocks)
+            {
+                let first_free_space_block = blocks[first_free_space_block_pos].clone();
+                let last_file_block = blocks[last_file_block_pos].clone();
 
+                blocks[first_free_space_block_pos] = last_file_block.clone();
+                blocks[last_file_block_pos] = first_free_space_block.clone();
             }
+        } else {
+            break;
         }
     }
 
     //println!("{:?}", blocks);
 
-    0
+    calc_checksum(&blocks)
 }
 
-fn find_first_free_space(blocks: &[DiskEntry]) -> Option<DiskEntry> {
-    todo!()
+fn find_first_whole_free_space(
+    blocks: &[DiskEntryWithLen],
+    required_len: usize,
+) -> Option<(usize, &DiskEntryWithLen)> {
+    blocks.iter().enumerate().find(|(_, block)| {
+        matches!(block.entry, DiskEntryType::FreeSpace) && block.len >= required_len
+    })
 }
 
-fn find_last_whole_file(blocks: &[DiskEntry]) -> Option<DiskEntry> {
-    todo!()
+fn find_last_whole_file<'a>(
+    blocks: &'a [DiskEntryWithLen],
+) -> Option<(usize, &'a DiskEntryWithLen)> {
+    blocks
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(_, block)| matches!(block.entry, DiskEntryType::File))
+}
+
+fn print_blocks(blocks: &[DiskEntryWithLen]) {
+    for block in blocks {
+        match block {
+            DiskEntryWithLen {
+                id: Some(id),
+                entry: DiskEntryType::File,
+                len,
+            } => print!("{}", id.to_string().repeat(*len)),
+            DiskEntryWithLen {
+                id: None,
+                entry: DiskEntryType::FreeSpace,
+                len,
+            } => print!("{}", ".".repeat(*len)),
+            _ => (),
+        }
+    }
+    println!()
 }
 
 fn get_checksum_whole_files(input_file: &str) -> usize {
@@ -159,11 +197,32 @@ fn get_checksum_whole_files(input_file: &str) -> usize {
 
     let mut blocks = input.disk.clone();
 
-    loop {
-        break;
-    }
+    print_blocks(&blocks);
 
-    println!("{:?}", blocks);
+    while let Some((last_whole_file_pos, &last_whole_file)) = find_last_whole_file(&blocks) {
+        if let Some((first_whole_free_space_pos, &first_whole_free_space)) =
+            find_first_whole_free_space(&blocks, last_whole_file.len)
+        {
+            blocks.remove(last_whole_file_pos);
+            blocks.remove(first_whole_free_space_pos);
+            blocks.insert(last_whole_file_pos - 1, DiskEntryWithLen {
+                id: None,
+                entry: DiskEntryType::FreeSpace,
+                len: last_whole_file.len,
+            });
+            blocks.insert(first_whole_free_space_pos, last_whole_file);
+            if first_whole_free_space.len - last_whole_file.len > 0 {
+                blocks.insert(first_whole_free_space_pos + 1, DiskEntryWithLen {
+                    id: None,
+                    entry: DiskEntryType::FreeSpace,
+                    len: first_whole_free_space.len - last_whole_file.len,
+                });
+            }
+            print_blocks(&blocks);
+        } else {
+            continue;
+        }
+    }
 
     0
 }
@@ -203,6 +262,21 @@ mod tests {
     #[test]
     fn test_get_checksum_whole_files_test01() {
         assert_eq!(2858, get_checksum_whole_files("input/day09_test01.txt"));
+    }
+
+    #[test]
+    fn test_get_checksum_whole_files_test02() {
+        assert_eq!(0, get_checksum_whole_files("input/day09_test02.txt"));
+    }
+
+    #[test]
+    fn test_get_checksum_whole_files_test03() {
+        assert_eq!(0, get_checksum_whole_files("input/day09_test03.txt"));
+    }
+
+    #[test]
+    fn test_get_checksum_whole_files_test04() {
+        assert_eq!(0, get_checksum_whole_files("input/day09_test04.txt"));
     }
 
     // This test takes a while so ignore in CI
