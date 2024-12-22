@@ -1,5 +1,7 @@
 // https://adventofcode.com/2024/day/9
 
+use std::collections::HashSet;
+
 use super::utils::get_lines;
 
 struct InputPartOne {
@@ -165,12 +167,11 @@ fn find_first_whole_free_space(
 
 fn find_last_whole_file<'a>(
     blocks: &'a [DiskEntryWithLen],
+    visited_files: &HashSet<usize>,
 ) -> Option<(usize, &'a DiskEntryWithLen)> {
-    blocks
-        .iter()
-        .enumerate()
-        .rev()
-        .find(|(_, block)| matches!(block.entry, DiskEntryType::File))
+    blocks.iter().enumerate().rev().find(|(_, block)| {
+        matches!(block.entry, DiskEntryType::File) && !visited_files.contains(&block.id.unwrap())
+    })
 }
 
 fn print_blocks(blocks: &[DiskEntryWithLen]) {
@@ -199,10 +200,17 @@ fn get_checksum_whole_files(input_file: &str) -> usize {
 
     print_blocks(&blocks);
 
-    while let Some((last_whole_file_pos, &last_whole_file)) = find_last_whole_file(&blocks) {
-        if let Some((first_whole_free_space_pos, &first_whole_free_space)) =
+    let mut visited_files: HashSet<usize> = HashSet::new();
+
+    while let Some((last_whole_file_pos, &last_whole_file)) =
+        find_last_whole_file(&blocks, &visited_files)
+    {
+        visited_files.insert(last_whole_file.id.unwrap());
+
+        while let Some((first_whole_free_space_pos, &first_whole_free_space)) =
             find_first_whole_free_space(&blocks, last_whole_file.len)
         {
+            visited_files.clear();
             blocks.remove(last_whole_file_pos);
             blocks.remove(first_whole_free_space_pos);
             blocks.insert(last_whole_file_pos - 1, DiskEntryWithLen {
@@ -219,8 +227,6 @@ fn get_checksum_whole_files(input_file: &str) -> usize {
                 });
             }
             print_blocks(&blocks);
-        } else {
-            continue;
         }
     }
 
