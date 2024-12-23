@@ -2,6 +2,8 @@
 
 use std::collections::HashSet;
 
+use super::utils::Direction;
+use super::utils::ListNode;
 use super::utils::get_lines;
 
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
@@ -24,14 +26,6 @@ impl TryFrom<u8> for MapEntry {
             _ => Err(()),
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-enum Direction {
-    N,
-    S,
-    E,
-    W,
 }
 
 struct Input {
@@ -79,17 +73,6 @@ struct ListNodeEntry {
     direction: Direction,
 }
 
-struct ListNode {
-    val: ListNodeEntry,
-    next: Option<Box<ListNode>>,
-}
-
-impl ListNode {
-    fn new(val: ListNodeEntry) -> ListNode {
-        ListNode { val, next: None }
-    }
-}
-
 struct ListNodePos {
     next_pos: (usize, usize),
     next_dir: Direction,
@@ -104,7 +87,7 @@ struct VisitedNodeEntry {
 
 fn process_list_entry(
     map: &Vec<Vec<MapEntry>>,
-    list_node: &mut ListNode,
+    list_node: &mut ListNode<ListNodeEntry>,
     visited_nodes: &mut Vec<VisitedNodeEntry>,
     has_loop: &mut bool,
     list_node_pos: &ListNodePos,
@@ -157,7 +140,7 @@ fn process_list_entry(
 
 fn build_list(
     map: &Vec<Vec<MapEntry>>,
-    list_node: &mut ListNode,
+    list_node: &mut ListNode<ListNodeEntry>,
     visited_nodes: &mut Vec<VisitedNodeEntry>,
     has_loop: &mut bool,
 ) {

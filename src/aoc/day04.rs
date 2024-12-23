@@ -1,19 +1,7 @@
 // https://adventofcode.com/2024/day/4
 
 use super::utils::get_lines;
-
-#[derive(Debug, Default, Clone, Copy, Hash, Ord, PartialOrd, Eq, PartialEq)]
-enum Direction {
-    #[default]
-    North,
-    NorthEast,
-    East,
-    SouthEast,
-    South,
-    SouthWest,
-    West,
-    NorthWest,
-}
+use super::utils::Compass;
 
 struct Input {
     search_grid: Vec<Vec<char>>,
@@ -83,7 +71,7 @@ fn max_col_index(col_index: usize, col_size: usize) -> usize {
 
 fn check_next_in_xmas_seq(
     exp_letter: char,
-    dir: Direction,
+    dir: Compass,
     row_index: usize,
     col_index: usize,
     input: &Input,
@@ -106,14 +94,14 @@ fn check_next_in_xmas_seq(
     // 9 M X M X A X M A S X
 
     match dir {
-        Direction::North => {
+        Compass::North => {
             if exp_letter == input.search_grid[min_row_index][col_index]
                 && row_index != min_row_index
             {
                 return Some((min_row_index, col_index));
             }
         }
-        Direction::NorthEast => {
+        Compass::NorthEast => {
             if exp_letter == input.search_grid[min_row_index][max_col_index]
                 && row_index != min_row_index
                 && col_index != max_col_index
@@ -121,14 +109,14 @@ fn check_next_in_xmas_seq(
                 return Some((min_row_index, max_col_index));
             }
         }
-        Direction::East => {
+        Compass::East => {
             if exp_letter == input.search_grid[row_index][max_col_index]
                 && col_index != max_col_index
             {
                 return Some((row_index, max_col_index));
             }
         }
-        Direction::SouthEast => {
+        Compass::SouthEast => {
             if exp_letter == input.search_grid[max_row_index][max_col_index]
                 && row_index != max_row_index
                 && col_index != max_col_index
@@ -136,14 +124,14 @@ fn check_next_in_xmas_seq(
                 return Some((max_row_index, max_col_index));
             }
         }
-        Direction::South => {
+        Compass::South => {
             if exp_letter == input.search_grid[max_row_index][col_index]
                 && row_index != max_row_index
             {
                 return Some((max_row_index, col_index));
             }
         }
-        Direction::SouthWest => {
+        Compass::SouthWest => {
             if exp_letter == input.search_grid[max_row_index][min_col_index]
                 && row_index != max_row_index
                 && col_index != min_col_index
@@ -151,14 +139,14 @@ fn check_next_in_xmas_seq(
                 return Some((max_row_index, min_col_index));
             }
         }
-        Direction::West => {
+        Compass::West => {
             if exp_letter == input.search_grid[row_index][min_col_index]
                 && col_index != min_col_index
             {
                 return Some((row_index, min_col_index));
             }
         }
-        Direction::NorthWest => {
+        Compass::NorthWest => {
             if exp_letter == input.search_grid[min_row_index][min_col_index]
                 && row_index != min_row_index
                 && col_index != min_col_index
@@ -172,7 +160,7 @@ fn check_next_in_xmas_seq(
 
 fn trace_xmas(
     last_letter: char,
-    dir: Direction,
+    dir: Compass,
     row_index: usize,
     col_index: usize,
     input: &Input,
@@ -206,14 +194,14 @@ fn get_sum_xmas(input_file: &str) -> u32 {
     for i in 0..input.row_size {
         for j in 0..input.col_size {
             if input.search_grid[i][j] == 'X' {
-                sum_xmas += trace_xmas('X', Direction::North, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::NorthEast, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::East, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::SouthEast, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::South, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::SouthWest, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::West, i, j, &input);
-                sum_xmas += trace_xmas('X', Direction::NorthWest, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::North, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::NorthEast, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::East, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::SouthEast, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::South, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::SouthWest, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::West, i, j, &input);
+                sum_xmas += trace_xmas('X', Compass::NorthWest, i, j, &input);
             }
         }
     }
@@ -222,7 +210,7 @@ fn get_sum_xmas(input_file: &str) -> u32 {
 }
 
 fn check_next_in_x_mas_seq(
-    dir: Direction,
+    dir: Compass,
     row_index: usize,
     col_index: usize,
     input: &Input,
@@ -233,7 +221,7 @@ fn check_next_in_x_mas_seq(
     let max_col_index = max_col_index(col_index, input.col_size);
 
     match dir {
-        Direction::NorthEast => {
+        Compass::NorthEast => {
             if (input.search_grid[min_row_index][max_col_index] == 'S'
                 || input.search_grid[min_row_index][max_col_index] == 'M')
                 && row_index != min_row_index
@@ -242,7 +230,7 @@ fn check_next_in_x_mas_seq(
                 return Some(input.search_grid[min_row_index][max_col_index]);
             }
         }
-        Direction::SouthEast => {
+        Compass::SouthEast => {
             if (input.search_grid[max_row_index][max_col_index] == 'S'
                 || input.search_grid[max_row_index][max_col_index] == 'M')
                 && row_index != max_row_index
@@ -251,7 +239,7 @@ fn check_next_in_x_mas_seq(
                 return Some(input.search_grid[max_row_index][max_col_index]);
             }
         }
-        Direction::SouthWest => {
+        Compass::SouthWest => {
             if (input.search_grid[max_row_index][min_col_index] == 'S'
                 || input.search_grid[max_row_index][min_col_index] == 'M')
                 && row_index != max_row_index
@@ -260,7 +248,7 @@ fn check_next_in_x_mas_seq(
                 return Some(input.search_grid[max_row_index][min_col_index]);
             }
         }
-        Direction::NorthWest => {
+        Compass::NorthWest => {
             if (input.search_grid[min_row_index][min_col_index] == 'S'
                 || input.search_grid[min_row_index][min_col_index] == 'M')
                 && row_index != min_row_index
@@ -282,10 +270,10 @@ fn get_sum_x_mas(input_file: &str) -> u32 {
     for i in 0..input.row_size {
         for j in 0..input.col_size {
             if input.search_grid[i][j] == 'A' {
-                let nw = check_next_in_x_mas_seq(Direction::NorthWest, i, j, &input);
-                let ne = check_next_in_x_mas_seq(Direction::NorthEast, i, j, &input);
-                let sw = check_next_in_x_mas_seq(Direction::SouthWest, i, j, &input);
-                let se = check_next_in_x_mas_seq(Direction::SouthEast, i, j, &input);
+                let nw = check_next_in_x_mas_seq(Compass::NorthWest, i, j, &input);
+                let ne = check_next_in_x_mas_seq(Compass::NorthEast, i, j, &input);
+                let sw = check_next_in_x_mas_seq(Compass::SouthWest, i, j, &input);
+                let se = check_next_in_x_mas_seq(Compass::SouthEast, i, j, &input);
 
                 let mut fwd_str: Vec<char> = vec![nw.unwrap_or('.'), 'A', se.unwrap_or('.')];
                 fwd_str.sort();

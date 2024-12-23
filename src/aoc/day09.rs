@@ -213,18 +213,24 @@ fn get_checksum_whole_files(input_file: &str) -> usize {
             visited_files.clear();
             blocks.remove(last_whole_file_pos);
             blocks.remove(first_whole_free_space_pos);
-            blocks.insert(last_whole_file_pos - 1, DiskEntryWithLen {
-                id: None,
-                entry: DiskEntryType::FreeSpace,
-                len: last_whole_file.len,
-            });
-            blocks.insert(first_whole_free_space_pos, last_whole_file);
-            if first_whole_free_space.len - last_whole_file.len > 0 {
-                blocks.insert(first_whole_free_space_pos + 1, DiskEntryWithLen {
+            blocks.insert(
+                last_whole_file_pos - 1,
+                DiskEntryWithLen {
                     id: None,
                     entry: DiskEntryType::FreeSpace,
-                    len: first_whole_free_space.len - last_whole_file.len,
-                });
+                    len: last_whole_file.len,
+                },
+            );
+            blocks.insert(first_whole_free_space_pos, last_whole_file);
+            if first_whole_free_space.len - last_whole_file.len > 0 {
+                blocks.insert(
+                    first_whole_free_space_pos + 1,
+                    DiskEntryWithLen {
+                        id: None,
+                        entry: DiskEntryType::FreeSpace,
+                        len: first_whole_free_space.len - last_whole_file.len,
+                    },
+                );
             }
             print_blocks(&blocks);
         }
