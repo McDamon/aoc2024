@@ -296,7 +296,7 @@ fn detect_loop(visited_nodes: &mut [VisitedNodeEntry]) -> bool {
     let mut slow_index = 0;
     let mut fast_index = 0;
 
-    // Loop that runs while fast and slow indexes do not point to mnull null and are not equal
+    // Loop that runs while fast and slow indexes do not point to null and are not equal
     while fast_index < visited_nodes.len() {
         slow_index += 1;
         fast_index += 2;
