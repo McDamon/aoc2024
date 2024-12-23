@@ -63,17 +63,17 @@ pub struct TreeNode<T>
 where
     T: PartialEq,
 {
-    idx: usize,
-    val: T,
-    parent: Option<usize>,
-    children: Vec<usize>,
+    pub idx: usize,
+    pub val: T,
+    pub parent: Option<usize>,
+    pub children: Vec<usize>,
 }
 
 impl<T> TreeNode<T>
 where
     T: PartialEq,
 {
-    fn new(idx: usize, val: T) -> Self {
+    pub fn new(idx: usize, val: T) -> Self {
         Self {
             idx,
             val,
@@ -84,18 +84,18 @@ where
 }
 
 #[derive(Debug, Default)]
-struct ArenaTree<T>
+pub struct ArenaTree<T>
 where
     T: PartialEq,
 {
-    arena: Vec<TreeNode<T>>,
+    pub arena: Vec<TreeNode<T>>,
 }
 
 impl<T> ArenaTree<T>
 where
     T: PartialEq,
 {
-    fn add_node(&mut self, val: T) -> usize {
+    pub fn add_node(&mut self, val: T) -> usize {
         // First see if it exists
         for node in &self.arena {
             if node.val == val {
@@ -108,24 +108,23 @@ where
         idx
     }
 
-    fn size(&self) -> usize {
+    pub fn size(&self) -> usize {
         self.arena.len()
     }
 
-    fn edges(&self) -> usize {
+    pub fn edges(&self) -> usize {
         self.arena
             .iter()
             .fold(0, |acc, node| acc + node.children.len())
     }
 
-    fn depth(&self, idx: usize) -> usize {
+    pub fn depth(&self, idx: usize) -> usize {
         match self.arena[idx].parent {
             Some(id) => 1 + self.depth(id),
             None => 0,
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

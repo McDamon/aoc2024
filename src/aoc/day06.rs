@@ -2,9 +2,9 @@
 
 use std::collections::HashSet;
 
+use super::utils::get_lines;
 use super::utils::Direction;
 use super::utils::ListNode;
-use super::utils::get_lines;
 
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
 #[repr(u8)]
