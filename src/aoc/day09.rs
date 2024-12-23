@@ -156,25 +156,7 @@ fn get_checksum(input_file: &str) -> usize {
     calc_checksum(&blocks)
 }
 
-fn find_first_whole_free_space(
-    blocks: &[DiskEntryWithLen],
-    required_len: usize,
-) -> Option<(usize, &DiskEntryWithLen)> {
-    blocks.iter().enumerate().find(|(_, block)| {
-        matches!(block.entry, DiskEntryType::FreeSpace) && block.len >= required_len
-    })
-}
-
-fn find_last_whole_file<'a>(
-    blocks: &'a [DiskEntryWithLen],
-    visited_files: &HashSet<usize>,
-) -> Option<(usize, &'a DiskEntryWithLen)> {
-    blocks.iter().enumerate().rev().find(|(_, block)| {
-        matches!(block.entry, DiskEntryType::File) && !visited_files.contains(&block.id.unwrap())
-    })
-}
-
-fn print_blocks(blocks: &[DiskEntryWithLen]) {
+fn print_blocks(blocks: &Vec<DiskEntryWithLen>) {
     for block in blocks {
         match block {
             DiskEntryWithLen {
@@ -193,44 +175,120 @@ fn print_blocks(blocks: &[DiskEntryWithLen]) {
     println!()
 }
 
+fn find_first_whole_free_space(
+    blocks: &[DiskEntryWithLen],
+    required_len: usize,
+    last_whole_file_pos: usize,
+) -> Option<(usize, &DiskEntryWithLen)> {
+    blocks.iter().enumerate().find(|(i, block)| {
+        matches!(block.entry, DiskEntryType::FreeSpace)
+            && block.len >= required_len
+            && *i < last_whole_file_pos
+    })
+}
+
+fn find_last_whole_file<'a>(
+    blocks: &'a [DiskEntryWithLen],
+    ignored_file_ids: &HashSet<usize>,
+) -> Option<(usize, &'a DiskEntryWithLen)> {
+    blocks.iter().enumerate().rev().find(|(_, block)| {
+        matches!(block.entry, DiskEntryType::File) && !ignored_file_ids.contains(&block.id.unwrap())
+    })
+}
+
+fn calc_checksum_whole_files(blocks: &[DiskEntryWithLen]) -> usize {
+    let mut block_index = 0usize;
+    let mut checksum = 0usize;
+    for block in blocks.iter() {
+        for _ in 0..block.len {
+            match block.entry {
+                DiskEntryType::File => {
+                    checksum += block_index * block.id.unwrap();
+                }
+                _ => (),
+            }
+            block_index += 1;
+        }
+    }
+    checksum
+}
+
 fn get_checksum_whole_files(input_file: &str) -> usize {
     let input = parse_input_part_two(input_file);
 
     let mut blocks = input.disk.clone();
 
-    print_blocks(&blocks);
+    let mut ignored_file_ids: HashSet<usize> = HashSet::new();
 
-    let mut visited_files: HashSet<usize> = HashSet::new();
+    loop {
+        //println!("NEW");
+        //print_blocks(&blocks);
 
-    while let Some((last_whole_file_pos, &last_whole_file)) =
-        find_last_whole_file(&blocks, &visited_files)
-    {
-        visited_files.insert(last_whole_file.id.unwrap());
-
-        while let Some((first_whole_free_space_pos, &first_whole_free_space)) =
-            find_first_whole_free_space(&blocks, last_whole_file.len)
+        if let Some((last_whole_file_pos, &last_whole_file)) =
+            find_last_whole_file(&blocks, &ignored_file_ids)
         {
-            visited_files.clear();
-            blocks.remove(last_whole_file_pos);
-            blocks.remove(first_whole_free_space_pos);
-            blocks.insert(last_whole_file_pos - 1, DiskEntryWithLen {
-                id: None,
-                entry: DiskEntryType::FreeSpace,
-                len: last_whole_file.len,
-            });
-            blocks.insert(first_whole_free_space_pos, last_whole_file);
-            if first_whole_free_space.len - last_whole_file.len > 0 {
-                blocks.insert(first_whole_free_space_pos + 1, DiskEntryWithLen {
-                    id: None,
-                    entry: DiskEntryType::FreeSpace,
-                    len: first_whole_free_space.len - last_whole_file.len,
-                });
+            if let Some((first_free_space_pos, &first_free_space)) =
+                find_first_whole_free_space(&blocks, last_whole_file.len, last_whole_file_pos)
+            {
+                if first_free_space.len >= last_whole_file.len {
+                    /*println!(
+                        "Found free space block pos at {} with len {}, moving file block id {} at {} with len {}",
+                        first_free_space_pos,
+                        first_free_space.len,
+                        last_whole_file.id.unwrap(),
+                        last_whole_file_pos,
+                        last_whole_file.len
+                    );
+                    println!("BEFORE");
+                    print_blocks(&blocks);
+
+                    println!("DURING");
+                    */
+
+                    blocks.remove(last_whole_file_pos);
+                    //print_blocks(&blocks);
+                    blocks.remove(first_free_space_pos);
+                    //print_blocks(&blocks);
+                    blocks.insert(last_whole_file_pos - 1, DiskEntryWithLen {
+                        id: None,
+                        entry: DiskEntryType::FreeSpace,
+                        len: last_whole_file.len,
+                    });
+                    //print_blocks(&blocks);
+                    blocks.insert(first_free_space_pos, last_whole_file);
+                    //print_blocks(&blocks);
+                    if first_free_space.len - last_whole_file.len > 0 {
+                        blocks.insert(first_free_space_pos + 1, DiskEntryWithLen {
+                            id: None,
+                            entry: DiskEntryType::FreeSpace,
+                            len: first_free_space.len - last_whole_file.len,
+                        });
+                        //print_blocks(&blocks);
+                    }
+                    //println!("AFTER");
+                    //print_blocks(&blocks);
+                }
+            } else {
+                /*println!(
+                    "No more free space blocks to move file block id {} at {} with len {}",
+                    last_whole_file.id.unwrap(),
+                    last_whole_file_pos,
+                    last_whole_file.len
+                );*/
+                ignored_file_ids.insert(last_whole_file.id.unwrap());
+                if last_whole_file.id.unwrap() == 1 {
+                    //println!("No more files to move");
+                    break;
+                }
+                continue;
             }
-            print_blocks(&blocks);
+        } else {
+            //println!("No more files to move");
+            break;
         }
     }
 
-    0
+    calc_checksum_whole_files(&blocks)
 }
 
 #[cfg(test)]
@@ -268,21 +326,6 @@ mod tests {
     #[test]
     fn test_get_checksum_whole_files_test01() {
         assert_eq!(2858, get_checksum_whole_files("input/day09_test01.txt"));
-    }
-
-    #[test]
-    fn test_get_checksum_whole_files_test02() {
-        assert_eq!(0, get_checksum_whole_files("input/day09_test02.txt"));
-    }
-
-    #[test]
-    fn test_get_checksum_whole_files_test03() {
-        assert_eq!(0, get_checksum_whole_files("input/day09_test03.txt"));
-    }
-
-    #[test]
-    fn test_get_checksum_whole_files_test04() {
-        assert_eq!(0, get_checksum_whole_files("input/day09_test04.txt"));
     }
 
     // This test takes a while so ignore in CI
