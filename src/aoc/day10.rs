@@ -201,7 +201,7 @@ fn get_sum_trailheads(input_file: &str) -> usize {
 
         sum_trailheads += visited_hiking_trails.len();
 
-        //print_tree(&tree);
+        print_tree(&tree);
     }
 
     sum_trailheads
@@ -240,6 +240,8 @@ fn get_sum_trailhead_ratings(input_file: &str) -> usize {
             (start_row, start_col),
             &mut visited_hiking_trails,
         );
+
+        sum_trailhead_ratings += tree.arena[tree.depth(8)].children.len();
 
         //print_tree(&tree);
     }
@@ -283,7 +285,7 @@ mod tests {
 
     #[test]
     fn test_get_sum_trailhead_ratings_test01() {
-        assert_eq!(1, get_sum_trailhead_ratings("input/day10_test01.txt"));
+        assert_eq!(16, get_sum_trailhead_ratings("input/day10_test01.txt"));
     }
 
     #[test]
@@ -293,7 +295,7 @@ mod tests {
 
     #[test]
     fn test_get_sum_trailheads_ratings_test03() {
-        assert_eq!(4, get_sum_trailhead_ratings("input/day10_test03.txt"));
+        assert_eq!(13, get_sum_trailhead_ratings("input/day10_test03.txt"));
     }
 
     #[test]
@@ -318,6 +320,6 @@ mod tests {
 
     #[test]
     fn test_get_sum_trailhead_ratings() {
-        assert_eq!(0, get_sum_trailhead_ratings("input/day10.txt"));
+        assert_eq!(1694, get_sum_trailhead_ratings("input/day10.txt"));
     }
 }
