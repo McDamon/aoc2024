@@ -78,7 +78,7 @@ fn parse_prize(prize: &str) -> GamePosition {
     }
 }
 
-fn get_fewest_tokens(input_file: &str) -> u32 {
+fn get_fewest_tokens(input_file: &str, pos_inc: usize) -> usize {
     let input = parse_input(input_file);
 
     input
@@ -92,20 +92,23 @@ fn get_fewest_tokens(input_file: &str) -> u32 {
                 game.button_a.y_forward as f64,
                 game.button_b.y_forward as f64,
             );
-            let b = Vector2::new(game.prize.x_right as f64, game.prize.y_forward as f64);
+            let b = Vector2::new(
+                game.prize.x_right as f64 + pos_inc as f64,
+                game.prize.y_forward as f64 + pos_inc as f64,
+            );
 
             let mut prize = 0;
             if let Some(x) = a.lu().solve(&b) {
                 // Define a small tolerance value
-                let tolerance = 1e-9;
+                let tolerance = 1e-3;
                 // Check if the solutions are whole numbers within the tolerance
                 if (x[0] - x[0].round()).abs() < tolerance
                     && (x[1] - x[1].round()).abs() < tolerance
                 {
-                    let x0 = x[0].round() as u32;
-                    let x1 = x[1].round() as u32;
+                    let x0 = x[0].round() as usize;
+                    let x1 = x[1].round() as usize;
                     let prize_calc = x0 * 3 + x1;
-                    println!("Won prize! A: {}, B: {}, Prize: {}", x0, x1, prize_calc);
+                    //println!("Won prize! A: {}, B: {}, Prize: {}", x0, x1, prize_calc);
                     prize = prize_calc;
                 }
             }
@@ -120,11 +123,27 @@ mod tests {
 
     #[test]
     fn test_get_fewest_tokens_test01() {
-        assert_eq!(480, get_fewest_tokens("input/day13_test01.txt"));
+        assert_eq!(480, get_fewest_tokens("input/day13_test01.txt", 0));
     }
 
     #[test]
     fn test_get_fewest_tokens() {
-        assert_eq!(29517, get_fewest_tokens("input/day13.txt"));
+        assert_eq!(29517, get_fewest_tokens("input/day13.txt", 0));
+    }
+
+    #[test]
+    fn test_get_fewest_tokens_pos_inc_test01() {
+        assert_eq!(
+            875318608908,
+            get_fewest_tokens("input/day13_test01.txt", 10000000000000)
+        );
+    }
+
+    #[test]
+    fn test_get_fewest_token_pos_inc_() {
+        assert_eq!(
+            103570327981381,
+            get_fewest_tokens("input/day13.txt", 10000000000000)
+        );
     }
 }
