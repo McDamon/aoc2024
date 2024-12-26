@@ -1,5 +1,7 @@
 // https://adventofcode.com/2024/day/11
 
+use std::collections::HashMap;
+
 use super::utils::get_lines;
 
 use itertools::Itertools;
@@ -46,7 +48,7 @@ fn get_new_stones(stone: usize) -> Vec<usize> {
             new_stones.push(stone * 2024);
         }
     }
-    return new_stones;
+    new_stones
 }
 
 fn get_num_stones(input_file: &str, blinks: usize) -> usize {
@@ -54,14 +56,14 @@ fn get_num_stones(input_file: &str, blinks: usize) -> usize {
 
     println!("Initial arrangement:");
     print_stones(&input.stones);
-    println!("");
+    println!();
 
     let mut stones: Vec<usize> = input.stones.clone();
 
     for _ in 0..blinks {
         let mut new_stones: Vec<usize> = Vec::new();
 
-        for (_, stone) in stones.iter().enumerate() {
+        for stone in stones.iter() {
             new_stones.extend(get_new_stones(*stone));
         }
         stones = new_stones;
@@ -72,39 +74,57 @@ fn get_num_stones(input_file: &str, blinks: usize) -> usize {
     stones.len()
 }
 
-fn process_stone(stone: usize, blinks: usize, blink_count: &mut usize, num_stones: &mut usize) {
-    if *blink_count >= blinks {
-        *num_stones += 1;
-        return;
+fn count_stones(
+    stone: usize,
+    blinks: usize,
+    stones_cache: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    if stones_cache.contains_key(&(stone, blinks)) {
+        return stones_cache[&(stone, blinks)];
     }
-    let new_stones: Vec<usize> = get_new_stones(stone);
 
-    println!("##########");
-    println!("Stone: {}", stone);
-    println!("New stones: {:?}", new_stones);
-    println!("Blink count: {}", blink_count);
-    println!("Num stones: {}", num_stones);
-    println!("##########");
-
-    for stone in new_stones {
-        process_stone(stone, blinks, &mut (*blink_count + 1), num_stones);
+    if blinks == 0 {
+        return 1;
     }
+
+    let num_stones: usize = match stone {
+        0 => count_stones(1, blinks - 1, stones_cache),
+        _ if stone.to_string().len() % 2 == 0 => {
+            let stone_str = stone.to_string();
+            let (first_half, second_half) = stone_str.split_at(stone_str.len() / 2);
+            count_stones(
+                first_half.parse::<usize>().unwrap(),
+                blinks - 1,
+                stones_cache,
+            ) + count_stones(
+                second_half.parse::<usize>().unwrap(),
+                blinks - 1,
+                stones_cache,
+            )
+        }
+        _ => count_stones(stone * 2024, blinks - 1, stones_cache),
+    };
+
+    stones_cache.insert((stone, blinks), num_stones);
+
+    num_stones
 }
 
 fn get_num_stones_memoize(input_file: &str, blinks: usize) -> usize {
     let input = parse_input(input_file);
 
-    println!("Initial arrangement:");
+    /*println!("Initial arrangement:");
     print_stones(&input.stones);
-    println!("");
+    println!("");*/
 
     let stones: Vec<usize> = input.stones.clone();
 
     let mut num_stones = 0;
 
+    let mut stones_cache: HashMap<(usize, usize), usize> = HashMap::new();
+
     for stone in stones {
-        let mut blink_count = 0;
-        process_stone(stone, blinks, &mut blink_count, &mut num_stones);
+        num_stones += count_stones(stone, blinks, &mut stones_cache)
     }
 
     num_stones
@@ -206,6 +226,9 @@ mod tests {
 
     #[test]
     fn test_get_num_stones_memoize_75_blinks() {
-        assert_eq!(0, get_num_stones_memoize("input/day11.txt", 75));
+        assert_eq!(
+            223767210249237,
+            get_num_stones_memoize("input/day11.txt", 75)
+        );
     }
 }
