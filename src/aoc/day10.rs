@@ -9,14 +9,6 @@ struct Input {
     top_map: Vec<Vec<u32>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-enum Direction {
-    N,
-    S,
-    E,
-    W,
-}
-
 fn parse_input(input_file: &str) -> Input {
     let lines = get_lines(input_file);
 
