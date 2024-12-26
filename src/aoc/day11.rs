@@ -25,7 +25,7 @@ fn parse_input(input_file: &str) -> Input {
     Input { stones }
 }
 
-fn print_stones(stones: &Vec<usize>) {
+fn print_stones(stones: &[usize]) {
     println!("{}", stones.iter().format(" "));
 }
 
