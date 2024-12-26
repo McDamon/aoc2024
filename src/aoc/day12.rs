@@ -49,7 +49,9 @@ fn get_price_fencing_all_regions(input_file: &str) -> usize {
         })
         .collect::<Vec<(char, (usize, usize))>>();
 
-    println!("{:?}", plant_pos_list);
+    for (plant, (row, col)) in plant_pos_list {
+        println!("Plant: {}, Row: {}, Col: {}", plant, row, col);
+    }
     
     0
 }
@@ -60,6 +62,21 @@ mod tests {
 
     #[test]
     fn test_get_price_fencing_all_regions_test01() {
-        assert_eq!(0, get_price_fencing_all_regions("input/day12_test01.txt"));
+        assert_eq!(140, get_price_fencing_all_regions("input/day12_test01.txt"));
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_test02() {
+        assert_eq!(772, get_price_fencing_all_regions("input/day12_test02.txt"));
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_test03() {
+        assert_eq!(1930, get_price_fencing_all_regions("input/day12_test03.txt"));
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions() {
+        assert_eq!(0, get_price_fencing_all_regions("input/day12.txt"));
     }
 }
