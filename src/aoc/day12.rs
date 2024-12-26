@@ -34,11 +34,16 @@ fn print_plants(plants: &Vec<Vec<char>>) {
 struct Region {
     area: usize,
     perimeter: usize,
+    corners: usize,
 }
 
 impl Region {
-    fn new(area: usize, perimeter: usize) -> Region {
-        Region { area, perimeter }
+    fn new(area: usize, perimeter: usize, corners: usize) -> Region {
+        Region {
+            area,
+            perimeter,
+            corners,
+        }
     }
 }
 
@@ -56,6 +61,7 @@ fn flood_fill(
 
     let mut area = 0;
     let mut perimeter = 0;
+    let mut corners = 0;
 
     while let Some((row, col)) = stack.pop() {
         // This makes sure we don't double count positions
@@ -69,52 +75,120 @@ fn flood_fill(
             area += 1;
             visited_plants.insert((row, col));
 
-            // Check is area N is a perimeter
-            if row as i32 - 1 < 0 || plants[row - 1][col] != plant {
+            let n_dir = if row as i32 - 1 < 0 || plants[row - 1][col] != plant {
                 perimeter += 1;
+                None
+            } else {
+                stack.push((row - 1, col));
+                Some((row - 1, col))
+            };
+            let nw_dir =
+                if row as i32 - 1 < 0 || col as i32 - 1 < 0 || plants[row - 1][col - 1] != plant {
+                    None
+                } else {
+                    Some((row - 1, col - 1))
+                };
+            let w_dir = if col as i32 - 1 < 0 || plants[row][col - 1] != plant {
+                perimeter += 1;
+                None
+            } else {
+                stack.push((row, col - 1));
+                Some((row, col - 1))
+            };
+            let sw_dir = if row as i32 + 1 >= plants.len() as i32
+                || col as i32 - 1 < 0
+                || plants[row + 1][col - 1] != plant
+            {
+                None
+            } else {
+                Some((row + 1, col - 1))
+            };
+            let s_dir = if row as i32 + 1 >= plants.len() as i32 || plants[row + 1][col] != plant {
+                perimeter += 1;
+                None
+            } else {
+                stack.push((row + 1, col));
+                Some((row + 1, col))
+            };
+            let se_dir = if row as i32 + 1 >= plants.len() as i32
+                || col as i32 + 1 >= plants[0].len() as i32
+                || plants[row + 1][col + 1] != plant
+            {
+                None
+            } else {
+                Some((row + 1, col + 1))
+            };
+            let e_dir = if col as i32 + 1 >= plants[0].len() as i32 || plants[row][col + 1] != plant
+            {
+                perimeter += 1;
+                None
+            } else {
+                stack.push((row, col + 1));
+                Some((row, col + 1))
+            };
+            let ne_dir = if row as i32 - 1 < 0
+                || col as i32 + 1 >= plants[0].len() as i32
+                || plants[row - 1][col + 1] != plant
+            {
+                None
+            } else {
+                Some((row - 1, col + 1))
+            };
+
+            // We want to check concave and convex corners
+
+            // Convex corners
+            // ...
+            // ###<- This is a convex corner
+            // ###
+
+            if n_dir.is_none() && e_dir.is_none() {
+                corners += 1;
             }
-            // Check if area S is a perimeter
-            if row as i32 + 1 >= plants.len() as i32 || plants[row + 1][col] != plant {
-                perimeter += 1;
+            if s_dir.is_none() && e_dir.is_none() {
+                corners += 1;
             }
-            // Check if area E is a perimeter
-            if col as i32 + 1 >= plants[0].len() as i32 || plants[row][col + 1] != plant {
-                perimeter += 1;
+            if s_dir.is_none() && w_dir.is_none() {
+                corners += 1;
             }
-            // Check if area W is a perimeter
-            if col as i32 - 1 < 0 || plants[row][col - 1] != plant {
-                perimeter += 1;
+            if n_dir.is_none() && w_dir.is_none() {
+                corners += 1;
             }
 
-            if row > 0 {
-                // N direction
-                stack.push((row - 1, col));
+            // Concave corners
+            //                           #..
+            //                           ##.
+            // This is a concave corner->###
+
+            if n_dir.is_some() && e_dir.is_some() && ne_dir.is_none() {
+                corners += 1;
             }
-            if row < plants.len() - 1 {
-                // S direction
-                stack.push((row + 1, col));
+            if s_dir.is_some() && e_dir.is_some() && se_dir.is_none() {
+                corners += 1;
             }
-            if col < plants[0].len() - 1 {
-                // E direction
-                stack.push((row, col + 1));
+            if s_dir.is_some() && w_dir.is_some() && sw_dir.is_none() {
+                corners += 1;
             }
-            if col > 0 {
-                // W direction
-                stack.push((row, col - 1));
+            if n_dir.is_some() && w_dir.is_some() && nw_dir.is_none() {
+                corners += 1;
             }
         }
     }
 
     if area > 0 && perimeter > 0 {
+        /*println!(
+            "Plant: {}, Area: {}, Perimeter: {}, Corners: {}",
+            plant, area, perimeter, corners
+        );*/
         // Once we are done, we can add the new region
         regions
             .entry(plant)
             .or_default()
-            .push(Region::new(area, perimeter));
+            .push(Region::new(area, perimeter, corners));
     }
 }
 
-fn get_price_fencing_all_regions(input_file: &str) -> usize {
+fn get_price_fencing_all_regions(input_file: &str, apply_discount: bool) -> usize {
     let input = parse_input(input_file);
 
     //print_plants(&input.plants);
@@ -145,13 +219,27 @@ fn get_price_fencing_all_regions(input_file: &str) -> usize {
 
     //println!("Regions: {:?}", regions);
 
-    regions.into_values().map(|region| {
-            region
-                .into_iter()
-                .map(|r| r.area * r.perimeter)
-                .sum::<usize>()
-        })
-        .sum()
+    if apply_discount {
+        regions
+            .into_values()
+            .map(|region| {
+                region
+                    .into_iter()
+                    .map(|r| r.area * r.corners)
+                    .sum::<usize>()
+            })
+            .sum()
+    } else {
+        regions
+            .into_values()
+            .map(|region| {
+                region
+                    .into_iter()
+                    .map(|r| r.area * r.perimeter)
+                    .sum::<usize>()
+            })
+            .sum()
+    }
 }
 
 #[cfg(test)]
@@ -160,24 +248,97 @@ mod tests {
 
     #[test]
     fn test_get_price_fencing_all_regions_test01() {
-        assert_eq!(140, get_price_fencing_all_regions("input/day12_test01.txt"));
+        assert_eq!(
+            140,
+            get_price_fencing_all_regions("input/day12_test01.txt", false)
+        );
     }
 
     #[test]
     fn test_get_price_fencing_all_regions_test02() {
-        assert_eq!(772, get_price_fencing_all_regions("input/day12_test02.txt"));
+        assert_eq!(
+            772,
+            get_price_fencing_all_regions("input/day12_test02.txt", false)
+        );
     }
 
     #[test]
     fn test_get_price_fencing_all_regions_test03() {
         assert_eq!(
             1930,
-            get_price_fencing_all_regions("input/day12_test03.txt")
+            get_price_fencing_all_regions("input/day12_test03.txt", false)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_test04() {
+        assert_eq!(
+            692,
+            get_price_fencing_all_regions("input/day12_test04.txt", false)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_test05() {
+        assert_eq!(
+            1184,
+            get_price_fencing_all_regions("input/day12_test05.txt", false)
         );
     }
 
     #[test]
     fn test_get_price_fencing_all_regions() {
-        assert_eq!(1363682, get_price_fencing_all_regions("input/day12.txt"));
+        assert_eq!(
+            1363682,
+            get_price_fencing_all_regions("input/day12.txt", false)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_bulk_discount_test01() {
+        assert_eq!(
+            80,
+            get_price_fencing_all_regions("input/day12_test01.txt", true)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_bulk_discount_test02() {
+        assert_eq!(
+            436,
+            get_price_fencing_all_regions("input/day12_test02.txt", true)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_bulk_discount_test03() {
+        assert_eq!(
+            1206,
+            get_price_fencing_all_regions("input/day12_test03.txt", true)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_bulk_discount_test04() {
+        assert_eq!(
+            236,
+            get_price_fencing_all_regions("input/day12_test04.txt", true)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_bulk_discount_test05() {
+        assert_eq!(
+            368,
+            get_price_fencing_all_regions("input/day12_test05.txt", true)
+        );
+    }
+
+    #[test]
+    fn test_get_price_fencing_all_regions_bulk_discount_() {
+        assert_eq!(
+            787680,
+            get_price_fencing_all_regions("input/day12.txt", true)
+        );
     }
 }
