@@ -133,6 +133,52 @@ fn get_safety_factor(input_file: &str, width: i32, height: i32, num_secs: usize)
     ne_robots * nw_robots * se_robots * sw_robots
 }
 
+fn check_xmas_tree(input_file: &str, width: i32, height: i32, max_secs: usize) -> usize {
+    let input = parse_input(input_file);
+
+    let mut robots = input.robots.clone();
+
+    for secs in 0..max_secs {
+        for robot in &mut robots {
+            let (old_x, old_y) = robot.pos;
+            let (dx, dy) = robot.vel;
+
+            let new_x = if old_x + dx < 0 {
+                dx + width + old_x
+            } else if old_x + dx >= width {
+                dx - width + old_x
+            } else {
+                old_x + dx
+            };
+            let new_y = if old_y + dy < 0 {
+                dy + height + old_y
+            } else if old_y + dy >= height {
+                dy - height + old_y
+            } else {
+                old_y + dy
+            };
+
+            robot.pos = (new_x, new_y);
+        }
+
+        let mut robot_map: HashMap<(i32, i32), Vec<Robot>> = HashMap::new();
+        for robot in &robots {
+            robot_map.entry(robot.pos).or_default().push(robot.clone());
+        }
+        let sum_single_entries = robot_map
+            .iter()
+            .filter(|(_, robots)| robots.len() == 1)
+            .count();
+
+        if sum_single_entries == robots.len() {
+            print_robots(width, height, &robot_map.clone());
+            return secs + 1;
+        }
+    }
+
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,5 +259,11 @@ mod tests {
             222901875,
             get_safety_factor("input/day14.txt", 101, 103, 100)
         );
+    }
+
+    #[ignore]
+    #[test]
+    fn test_check_xmas_tree() {
+        assert_eq!(6243, check_xmas_tree("input/day14.txt", 101, 103, 10000));
     }
 }
