@@ -104,7 +104,30 @@ fn get_safety_factor(input_file: &str, width: i32, height: i32, num_secs: usize)
 
     print_robots(width, height, &robot_map);
 
-    0
+    let quad_width = width as usize / 2;
+    let quad_height = height as usize / 2;
+
+    println!("quad_width: {}, quad_height: {}", quad_width, quad_height);
+
+    let mut safety_factor = 0;
+
+    for (pos, robots) in robot_map {
+        for _ in robots {
+            let (x, y) = pos;
+            let (x, y) = (x as usize, y as usize);
+            if x < quad_width && y < quad_height {
+                safety_factor += 1;
+            } else if x >= quad_width && y < quad_height {
+                safety_factor += 1;
+            } else if x < quad_width && y >= quad_height {
+                safety_factor += 1;
+            } else {
+                safety_factor += 1;
+            }
+        }
+    }
+
+    safety_factor
 }
 
 #[cfg(test)]
@@ -178,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_get_safety_factor_test14() {
-        assert_eq!(0, get_safety_factor("input/day14_test01.txt", 11, 7, 100));
+        assert_eq!(12, get_safety_factor("input/day14_test01.txt", 11, 7, 100));
     }
 
     #[test]
