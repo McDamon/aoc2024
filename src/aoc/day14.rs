@@ -1,4 +1,4 @@
-// https://adventofcode.com/2024/day/13
+// https://adventofcode.com/2024/day/14
 
 use std::collections::HashMap;
 
@@ -62,7 +62,7 @@ fn get_safety_factor(input_file: &str, width: i32, height: i32, num_secs: usize)
 
     let mut robots = input.robots.clone();
 
-    for secs in 0..num_secs {
+    for _ in 0..num_secs {
         for robot in &mut robots {
             let (old_x, old_y) = robot.pos;
             let (dx, dy) = robot.vel;
@@ -84,7 +84,7 @@ fn get_safety_factor(input_file: &str, width: i32, height: i32, num_secs: usize)
 
             robot.pos = (new_x, new_y);
 
-            println!(
+            /*println!(
                 "Secs: {}, old_x: {}, old_y: {}, dx: {}, dy: {}, new_x: {}, new_y: {}",
                 secs + 1,
                 old_x,
@@ -93,7 +93,7 @@ fn get_safety_factor(input_file: &str, width: i32, height: i32, num_secs: usize)
                 dy,
                 new_x,
                 new_y
-            );
+            );*/
         }
     }
 
@@ -107,27 +107,30 @@ fn get_safety_factor(input_file: &str, width: i32, height: i32, num_secs: usize)
     let quad_width = width as usize / 2;
     let quad_height = height as usize / 2;
 
-    println!("quad_width: {}, quad_height: {}", quad_width, quad_height);
+    //println!("quad_width: {}, quad_height: {}", quad_width, quad_height);
 
-    let mut safety_factor = 0;
+    let mut ne_robots = 0;
+    let mut nw_robots = 0;
+    let mut se_robots = 0;
+    let mut sw_robots = 0;
 
     for (pos, robots) in robot_map {
         for _ in robots {
             let (x, y) = pos;
             let (x, y) = (x as usize, y as usize);
             if x < quad_width && y < quad_height {
-                safety_factor += 1;
-            } else if x >= quad_width && y < quad_height {
-                safety_factor += 1;
-            } else if x < quad_width && y >= quad_height {
-                safety_factor += 1;
-            } else {
-                safety_factor += 1;
+                ne_robots += 1;
+            } else if x > quad_width && y < quad_height {
+                nw_robots += 1;
+            } else if x < quad_width && y > quad_height {
+                se_robots += 1;
+            } else if x > quad_width && y > quad_height {
+                sw_robots += 1;
             }
         }
     }
 
-    safety_factor
+    ne_robots * nw_robots * se_robots * sw_robots
 }
 
 #[cfg(test)]
@@ -206,6 +209,9 @@ mod tests {
 
     #[test]
     fn test_get_safety_factor() {
-        assert_eq!(0, get_safety_factor("input/day14.txt", 101, 103, 100));
+        assert_eq!(
+            222901875,
+            get_safety_factor("input/day14.txt", 101, 103, 100)
+        );
     }
 }
