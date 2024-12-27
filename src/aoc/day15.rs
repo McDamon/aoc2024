@@ -4,7 +4,7 @@ use std::vec;
 
 use super::utils::get_lines;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum WarehouseEntry {
     Empty,
     Wall,
@@ -76,10 +76,27 @@ fn parse_input(input_file: &str) -> Input {
     Input { warehouse, moves }
 }
 
+fn print_warehouse(warehouse: &[Vec<WarehouseEntry>]) {
+    for row in warehouse {
+        for level in row {
+            match level {
+                WarehouseEntry::Empty => print!("."),
+                WarehouseEntry::Wall => print!("#"),
+                WarehouseEntry::Box => print!("O"),
+                WarehouseEntry::Robot => print!("@"),
+            }
+        }
+        println!();
+    }
+}
+
 fn get_sum_gps(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
-    println!("{:?}", input);
+    let mut warehouse = input.warehouse.clone();
+
+    println!("Initial state:");
+    print_warehouse(&warehouse);
 
     0
 }
