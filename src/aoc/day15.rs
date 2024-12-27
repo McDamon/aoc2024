@@ -44,17 +44,19 @@ fn parse_warehouse(warehouse_part: &[&str]) -> Vec<Vec<WarehouseEntry>> {
 }
 
 fn parse_moves(moves_part: &[&str]) -> Vec<Move> {
-    moves_part
-        .iter()
-        .filter_map(|line| {
-            match line.trim() {
-                    "^" => Some(Move::Up),
-                    "v" => Some(Move::Down),
-                    "<" => Some(Move::Left),
-                    _ => None,
-                }
-        })
-        .collect()
+    let mut moves: Vec<Move> = vec![];
+    for move_line in moves_part {
+        move_line.chars().for_each(|c| {
+            match c {
+                '^' => moves.push(Move::Up),
+                'v' => moves.push(Move::Down),
+                '<' => moves.push(Move::Left),
+                '>' => moves.push(Move::Right),
+                _ => panic!("Unknown move"),
+            };
+        });
+    }
+    moves
 }
 
 fn parse_input(input_file: &str) -> Input {
@@ -90,6 +92,12 @@ fn print_warehouse(warehouse: &[Vec<WarehouseEntry>]) {
     }
 }
 
+fn process_move(warehouse: &mut Vec<Vec<WarehouseEntry>>, your_move: &Move) {
+    println!("Move: {:?}", your_move);
+    print_warehouse(warehouse);
+    println!();
+}
+
 fn get_sum_gps(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
@@ -97,6 +105,11 @@ fn get_sum_gps(input_file: &str) -> u32 {
 
     println!("Initial state:");
     print_warehouse(&warehouse);
+    println!();
+
+    for your_move in &input.moves {
+        process_move(&mut warehouse, your_move);
+    }
 
     0
 }
