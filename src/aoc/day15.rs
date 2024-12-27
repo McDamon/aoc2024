@@ -92,7 +92,7 @@ fn print_warehouse(warehouse: &[Vec<WarehouseEntry>]) {
     }
 }
 
-fn process_move(warehouse: &mut Vec<Vec<WarehouseEntry>>, your_move: &Move) {
+fn process_move(warehouse: &mut [Vec<WarehouseEntry>], your_move: &Move) {
     println!("Move: {:?}", your_move);
     print_warehouse(warehouse);
     println!();
@@ -111,7 +111,14 @@ fn get_sum_gps(input_file: &str) -> u32 {
         process_move(&mut warehouse, your_move);
     }
 
-    0
+    warehouse.iter().enumerate().fold(0, |acc, (i, row)| {
+        acc + row.iter().enumerate().fold(0, |acc, (j, entry)| {
+            match entry {
+                WarehouseEntry::Box => acc + (100 * i as u32 + j as u32),
+                _ => acc,
+            }
+        })
+    })
 }
 
 #[cfg(test)]
@@ -120,12 +127,12 @@ mod tests {
 
     #[test]
     fn test_get_sum_gps_test01() {
-        assert_eq!(11, get_sum_gps("input/day15_test01.txt"));
+        assert_eq!(10092, get_sum_gps("input/day15_test01.txt"));
     }
 
     #[test]
     fn test_get_sum_gps_test02() {
-        assert_eq!(11, get_sum_gps("input/day15_test02.txt"));
+        assert_eq!(2028, get_sum_gps("input/day15_test02.txt"));
     }
 
     #[test]
