@@ -63,7 +63,8 @@ fn parse_input(input_file: &str) -> Input {
     let lines = get_lines(input_file);
 
     let parts: Vec<_> = lines.split(|line| line.trim().is_empty()).collect();
-    let warehouse_part: Vec<&str> = parts.first()
+    let warehouse_part: Vec<&str> = parts
+        .first()
         .map(|v| v.iter().map(|s| s.as_str()).collect())
         .unwrap_or(vec![]);
     let moves_part: Vec<&str> = parts
@@ -92,7 +93,12 @@ fn print_warehouse(warehouse: &[Vec<WarehouseEntry>]) {
     }
 }
 
-fn process_move(warehouse: &mut [Vec<WarehouseEntry>], your_move: &Move) {
+fn process_move(
+    warehouse: &mut [Vec<WarehouseEntry>],
+    robot_pos: &mut (usize, usize),
+    your_move: &Move,
+) {
+    println!("Robot pos: {:?}", robot_pos);
     println!("Move: {:?}", your_move);
     print_warehouse(warehouse);
     println!();
@@ -103,21 +109,36 @@ fn get_sum_gps(input_file: &str) -> u32 {
 
     let mut warehouse = input.warehouse.clone();
 
+    let mut robot_pos = warehouse
+        .iter()
+        .enumerate()
+        .fold((0, 0), |mut acc, (i, row)| {
+            if let Some(pos) = row
+                .iter()
+                .position(|entry| matches!(entry, WarehouseEntry::Robot))
+            {
+                acc = (i, pos);
+            }
+            acc
+        });
+
+    println!("Initial robot pos: {:?}", robot_pos);
     println!("Initial state:");
     print_warehouse(&warehouse);
     println!();
 
     for your_move in &input.moves {
-        process_move(&mut warehouse, your_move);
+        process_move(&mut warehouse, &mut robot_pos, your_move);
     }
 
     warehouse.iter().enumerate().fold(0, |acc, (i, row)| {
-        acc + row.iter().enumerate().fold(0, |acc, (j, entry)| {
-            match entry {
+        acc + row
+            .iter()
+            .enumerate()
+            .fold(0, |acc, (j, entry)| match entry {
                 WarehouseEntry::Box => acc + (100 * i as u32 + j as u32),
                 _ => acc,
-            }
-        })
+            })
     })
 }
 
