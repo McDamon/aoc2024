@@ -130,12 +130,8 @@ fn perform_move(
                         warehouse[peek_y][peek_x] = WarehouseEntry::Box;
                         maybe_next_move = Some(get_next_move((*robot_x, *robot_y), your_move))
                     }
-                    WarehouseEntry::Box => {
-                        maybe_next_move = Some((peek_x, peek_y))
-                    }
-                    _ => {
-                        maybe_next_move = None
-                    }
+                    WarehouseEntry::Box => maybe_next_move = Some((peek_x, peek_y)),
+                    _ => maybe_next_move = None,
                 }
             }
             _ => {
@@ -148,21 +144,23 @@ fn perform_move(
     //println!();
 }
 
+fn get_robot_pos(warehouse: &[Vec<WarehouseEntry>]) -> (usize, usize) {
+    for (y, row) in warehouse.iter().enumerate() {
+        for (x, entry) in row.iter().enumerate() {
+            if *entry == WarehouseEntry::Robot {
+                return (x, y);
+            }
+        }
+    }
+    panic!("Robot not found in the warehouse");
+}
+
 fn get_sum_gps(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
     let mut warehouse = input.warehouse.clone();
 
-    let mut robot_pos: (usize, usize) = 'outer: {
-        for (y, row) in warehouse.iter().enumerate() {
-            for (x, entry) in row.iter().enumerate() {
-                if *entry == WarehouseEntry::Robot {
-                    break 'outer (x, y);
-                }
-            }
-        }
-        panic!("Robot not found in the warehouse");
-    };
+    let mut robot_pos: (usize, usize) = get_robot_pos(warehouse.as_slice());
 
     /*println!("Initial robot pos: {:?}", robot_pos);
     println!("Initial state:");
@@ -179,6 +177,84 @@ fn get_sum_gps(input_file: &str) -> u32 {
             .enumerate()
             .fold(0, |acc, (j, entry)| match entry {
                 WarehouseEntry::Box => acc + (100 * i as u32 + j as u32),
+                _ => acc,
+            })
+    })
+}
+
+fn print_warehouse_wider(warehouse: &[Vec<char>]) {
+    for row in warehouse {
+        for entry in row {
+            print!("{}", entry);
+        }
+        println!();
+    }
+}
+
+fn get_robot_pos_wider(warehouse: &[Vec<char>]) -> (usize, usize) {
+    for (y, row) in warehouse.iter().enumerate() {
+        for (x, entry) in row.iter().enumerate() {
+            if *entry == '@' {
+                return (x, y);
+            }
+        }
+    }
+    panic!("Robot not found in the warehouse");
+}
+
+fn perform_move_wider(
+    warehouse: &mut [Vec<char>],
+    robot_pos: &mut (usize, usize),
+    your_move: &Move,
+) {
+}
+
+fn get_sum_gps_wider(input_file: &str) -> u32 {
+    let input = parse_input(input_file);
+
+    let mut warehouse_wider: Vec<Vec<char>> = input.warehouse.iter().fold(vec![], |mut acc, row| {
+        let mut new_row: Vec<char> = vec![];
+        for entry in row {
+            match entry {
+                WarehouseEntry::Empty => {
+                    new_row.push('.');
+                    new_row.push('.');
+                }
+                WarehouseEntry::Wall => {
+                    new_row.push('#');
+                    new_row.push('#');
+                }
+                WarehouseEntry::Box => {
+                    new_row.push('[');
+                    new_row.push(']');
+                }
+                WarehouseEntry::Robot => {
+                    new_row.push('@');
+                    new_row.push('.');
+                }
+            }
+        }
+        acc.push(new_row);
+        acc
+    });
+
+    let mut robot_pos: (usize, usize) = get_robot_pos_wider(&warehouse_wider);
+
+    println!("Initial robot pos: {:?}", robot_pos);
+    println!("Initial state:");
+    print_warehouse_wider(&warehouse_wider);
+    println!();
+
+    for your_move in &input.moves {
+        perform_move_wider(&mut warehouse_wider, &mut robot_pos, your_move);
+    }
+
+    warehouse_wider.iter().enumerate().fold(0, |acc, (i, row)| {
+        acc + row
+            .iter()
+            .enumerate()
+            .fold(0, |acc, (j, entry)| match entry {
+                '[' => acc + (100 * i as u32 + j as u32),
                 _ => acc,
             })
     })
@@ -237,5 +313,61 @@ mod tests {
     #[test]
     fn test_get_sum_gps() {
         assert_eq!(1517819, get_sum_gps("input/day15.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test01() {
+        assert_eq!(0, get_sum_gps_wider("input/day15_test01.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test02() {
+        assert_eq!(0, get_sum_gps_wider("input/day15_test02.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test03() {
+        // Down
+        assert_eq!(0, get_sum_gps_wider("input/day15_test03.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test04() {
+        // Right
+        assert_eq!(0, get_sum_gps_wider("input/day15_test04.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test05() {
+        // Down
+        assert_eq!(0, get_sum_gps_wider("input/day15_test05.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test06() {
+        // Left
+        assert_eq!(0, get_sum_gps_wider("input/day15_test06.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test07() {
+        // Up
+        assert_eq!(0, get_sum_gps_wider("input/day15_test07.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test08() {
+        // Right
+        assert_eq!(0, get_sum_gps_wider("input/day15_test08.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test09() {
+        assert_eq!(9021, get_sum_gps_wider("input/day15_test09.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider() {
+        assert_eq!(0, get_sum_gps_wider("input/day15.txt"));
     }
 }
