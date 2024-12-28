@@ -99,128 +99,106 @@ fn process_move(
     robot_pos: &mut (usize, usize),
     your_move: &Move,
 ) {
-    let (robot_x, robot_y) = robot_pos;
-    let warehouse_cols = warehouse.len();
-    let warehouse_rows = warehouse[0].len();
+    let (robot_x, robot_y) = robot_pos.clone();
     match your_move {
         Move::Up => {
-            for new_y in *robot_y..0 {
-                println!("Up. New y: {}", new_y);
-                match warehouse[*robot_x][new_y] {
-                    WarehouseEntry::Empty => {
-                        warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                        warehouse[*robot_x][new_y] = WarehouseEntry::Robot;
-                        *robot_y = new_y;
-                        break;
-                    },
-                    WarehouseEntry::Wall => {
-                        break;
-                    },
-                    WarehouseEntry::Box => {
-                        match warehouse[*robot_x][new_y - 1] {
-                            WarehouseEntry::Empty => {
-                                warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                                warehouse[*robot_x][new_y] = WarehouseEntry::Robot;
-                                warehouse[*robot_x][new_y - 1] = WarehouseEntry::Box;
-                                *robot_y = new_y;
-                                break;
-                            },
-                            _ => {},
-                        }
-                    },
-                    _ => {
-                        continue
-                    },
-                }
+            let new_y = robot_y - 1;
+            match warehouse[new_y][robot_x] {
+                WarehouseEntry::Empty => {
+                    warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                    warehouse[new_y][robot_x] = WarehouseEntry::Robot;
+                    robot_pos.1 = new_y;
+                },
+                WarehouseEntry::Wall => {
+                },
+                WarehouseEntry::Box => {
+                    match warehouse[new_y - 1][robot_x] {
+                        WarehouseEntry::Empty => {
+                            warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                            warehouse[new_y][robot_x] = WarehouseEntry::Robot;
+                            warehouse[new_y - 1][robot_x] = WarehouseEntry::Box;
+                            robot_pos.1 = new_y;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {
+                },
             }
         },
         Move::Down => {
-            for new_y in *robot_y..warehouse_rows {
-                println!("Down. New y: {}", new_y);
-                match warehouse[*robot_x][new_y] {
-                    WarehouseEntry::Empty => {
-                        warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                        warehouse[*robot_x][new_y] = WarehouseEntry::Robot;
-                        *robot_y = new_y;
-                        break;
-                    },
-                    WarehouseEntry::Wall => {
-                        break;
-                    },
-                    WarehouseEntry::Box => {
-                        match warehouse[*robot_x][new_y + 1] {
-                            WarehouseEntry::Empty => {
-                                warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                                warehouse[*robot_x][new_y] = WarehouseEntry::Robot;
-                                warehouse[*robot_x][new_y + 1] = WarehouseEntry::Box;
-                                *robot_y = new_y;
-                                break;
-                            },
-                            _ => {},
-                        }
-                    },
-                    _ => {
-                        continue
-                    },
-                }
+            let new_y = robot_y + 1;
+            match warehouse[new_y][robot_x] {
+                WarehouseEntry::Empty => {
+                    warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                    warehouse[new_y][robot_x] = WarehouseEntry::Robot;
+                    robot_pos.1 = new_y;
+                },
+                WarehouseEntry::Wall => {
+                },
+                WarehouseEntry::Box => {
+                    match warehouse[new_y + 1][robot_x] {
+                        WarehouseEntry::Empty => {
+                            warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                            warehouse[new_y][robot_x] = WarehouseEntry::Robot;
+                            warehouse[new_y + 1][robot_x] = WarehouseEntry::Box;
+                            robot_pos.1 = new_y;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {
+                },
             }
         },
         Move::Left => {
-            for new_x in *robot_x..0 {
-                println!("Left. New x: {}", new_x);
-                match warehouse[new_x][*robot_y] {
-                    WarehouseEntry::Empty => {
-                        warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                        warehouse[new_x][*robot_y] = WarehouseEntry::Robot;
-                        *robot_x = new_x;
-                    },
-                    WarehouseEntry::Wall => {
-                        break;
-                    },
-                    WarehouseEntry::Box => {
-                        match warehouse[new_x - 1][*robot_y] {
-                            WarehouseEntry::Empty => {
-                                warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                                warehouse[new_x][*robot_y] = WarehouseEntry::Robot;
-                                warehouse[new_x - 1][*robot_y] = WarehouseEntry::Box;
-                                *robot_x = new_x;
-                            },
-                            _ => {},
-                        }
-                    },
-                    _ => {
-                        continue
-                    },
-                }
+            let new_x = robot_x - 1;
+            match warehouse[robot_y][new_x] {
+                WarehouseEntry::Empty => {
+                    warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                    warehouse[robot_y][new_x] = WarehouseEntry::Robot;
+                    robot_pos.0 = new_x;
+                },
+                WarehouseEntry::Wall => {
+                },
+                WarehouseEntry::Box => {
+                    match warehouse[robot_y][new_x - 1] {
+                        WarehouseEntry::Empty => {
+                            warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                            warehouse[robot_y][new_x] = WarehouseEntry::Robot;
+                            warehouse[robot_y][new_x - 1] = WarehouseEntry::Box;
+                            robot_pos.0 = new_x;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {
+                },
             }
         },
         Move::Right => {
-            for new_x in *robot_x..warehouse_cols {
-                println!("Right. New x: {}", new_x);
-                match warehouse[new_x][*robot_y] {
-                    WarehouseEntry::Empty => {
-                        warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                        warehouse[new_x][*robot_y] = WarehouseEntry::Robot;
-                        *robot_x = new_x;
-                    },
-                    WarehouseEntry::Wall => {
-                        break;
-                    },
-                    WarehouseEntry::Box => {
-                        match warehouse[new_x - 1][*robot_y] {
-                            WarehouseEntry::Empty => {
-                                warehouse[*robot_x][*robot_y] = WarehouseEntry::Empty;
-                                warehouse[new_x][*robot_y] = WarehouseEntry::Robot;
-                                warehouse[new_x - 1][*robot_y] = WarehouseEntry::Box;
-                                *robot_x = new_x;
-                            },
-                            _ => {},
-                        }
-                    },
-                    _ => {
-                        continue
-                    },
-                }
+            let new_x = robot_x + 1;
+            match warehouse[robot_y][new_x] {
+                WarehouseEntry::Empty => {
+                    warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                    warehouse[robot_y][new_x] = WarehouseEntry::Robot;
+                    robot_pos.0 = new_x;
+                },
+                WarehouseEntry::Wall => {
+                },
+                WarehouseEntry::Box => {
+                    match warehouse[robot_y][new_x + 1] {
+                        WarehouseEntry::Empty => {
+                            warehouse[robot_y][robot_x] = WarehouseEntry::Empty;
+                            warehouse[robot_y][new_x] = WarehouseEntry::Robot;
+                            warehouse[robot_y][new_x + 1] = WarehouseEntry::Box;
+                            robot_pos.0 = new_x;
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {
+                },
             }
         },
     }
@@ -284,13 +262,13 @@ mod tests {
     #[test]
     fn test_get_sum_gps_test03() {
         // Down
-        assert_eq!(0, get_sum_gps("input/day15_test03.txt"));
+        assert_eq!(1624, get_sum_gps("input/day15_test03.txt"));
     }
 
     #[test]
     fn test_get_sum_gps_test04() {
         // Right
-        assert_eq!(0, get_sum_gps("input/day15_test04.txt"));
+        assert_eq!(1626, get_sum_gps("input/day15_test04.txt"));
     }
 
     #[test]
@@ -302,13 +280,19 @@ mod tests {
     #[test]
     fn test_get_sum_gps_test06() {
         // Left
-        assert_eq!(0, get_sum_gps("input/day15_test06.txt"));
+        assert_eq!(1621, get_sum_gps("input/day15_test06.txt"));
     }
 
     #[test]
     fn test_get_sum_gps_test07() {
         // Up
         assert_eq!(0, get_sum_gps("input/day15_test07.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_test08() {
+        // Right
+        assert_eq!(0, get_sum_gps("input/day15_test08.txt"));
     }
 
     #[test]
