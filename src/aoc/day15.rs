@@ -5,14 +5,6 @@ use std::vec;
 
 use super::utils::get_lines;
 
-#[derive(Debug, Clone, PartialEq)]
-enum WarehouseEntry {
-    Empty,
-    Wall,
-    Box,
-    Robot,
-}
-
 #[derive(Debug)]
 enum Move {
     Up,
@@ -23,22 +15,15 @@ enum Move {
 
 #[derive(Debug)]
 struct Input {
-    warehouse: Vec<Vec<WarehouseEntry>>,
+    warehouse: Vec<Vec<char>>,
     moves: Vec<Move>,
 }
 
-fn parse_warehouse(warehouse_part: &[&str]) -> Vec<Vec<WarehouseEntry>> {
+fn parse_warehouse(warehouse_part: &[&str]) -> Vec<Vec<char>> {
     warehouse_part
         .iter()
         .map(|line| {
             line.chars()
-                .map(|c| match c {
-                    '.' => WarehouseEntry::Empty,
-                    '#' => WarehouseEntry::Wall,
-                    'O' => WarehouseEntry::Box,
-                    '@' => WarehouseEntry::Robot,
-                    _ => panic!("Unknown warehouse entry"),
-                })
                 .collect()
         })
         .collect()
@@ -80,15 +65,10 @@ fn parse_input(input_file: &str) -> Input {
     Input { warehouse, moves }
 }
 
-fn print_warehouse(warehouse: &[Vec<WarehouseEntry>]) {
+fn print_warehouse(warehouse: &[Vec<char>]) {
     for row in warehouse {
         for entry in row {
-            match entry {
-                WarehouseEntry::Empty => print!("."),
-                WarehouseEntry::Wall => print!("#"),
-                WarehouseEntry::Box => print!("O"),
-                WarehouseEntry::Robot => print!("@"),
-            }
+            print!("{}", entry);
         }
         println!();
     }
@@ -105,7 +85,7 @@ fn get_next_move(current_pos: (usize, usize), your_move: &Move) -> (usize, usize
 }
 
 fn perform_move(
-    warehouse: &mut [Vec<WarehouseEntry>],
+    warehouse: &mut [Vec<char>],
     robot_pos: &mut (usize, usize),
     your_move: &Move,
 ) {
@@ -115,22 +95,22 @@ fn perform_move(
     while let Some(next_move) = maybe_next_move {
         let (next_x, next_y) = next_move;
         match warehouse[next_y][next_x] {
-            WarehouseEntry::Empty => {
-                warehouse[*robot_y][*robot_x] = WarehouseEntry::Empty;
-                warehouse[next_y][next_x] = WarehouseEntry::Robot;
+            '.' => {
+                warehouse[*robot_y][*robot_x] = '.';
+                warehouse[next_y][next_x] = '@';
                 *robot_x = next_x;
                 *robot_y = next_y;
                 maybe_next_move = None;
             }
-            WarehouseEntry::Box => {
+            'O' => {
                 let (peek_x, peek_y) = get_next_move((next_x, next_y), your_move);
                 match warehouse[peek_y][peek_x] {
-                    WarehouseEntry::Empty => {
-                        warehouse[next_y][next_x] = WarehouseEntry::Empty;
-                        warehouse[peek_y][peek_x] = WarehouseEntry::Box;
+                    '.' => {
+                        warehouse[next_y][next_x] = '.';
+                        warehouse[peek_y][peek_x] = 'O';
                         maybe_next_move = Some(get_next_move((*robot_x, *robot_y), your_move))
                     }
-                    WarehouseEntry::Box => maybe_next_move = Some((peek_x, peek_y)),
+                    'O' => maybe_next_move = Some((peek_x, peek_y)),
                     _ => maybe_next_move = None,
                 }
             }
@@ -144,10 +124,10 @@ fn perform_move(
     //println!();
 }
 
-fn get_robot_pos(warehouse: &[Vec<WarehouseEntry>]) -> (usize, usize) {
+fn get_robot_pos(warehouse: &[Vec<char>]) -> (usize, usize) {
     for (y, row) in warehouse.iter().enumerate() {
         for (x, entry) in row.iter().enumerate() {
-            if *entry == WarehouseEntry::Robot {
+            if *entry == '@' {
                 return (x, y);
             }
         }
@@ -176,30 +156,10 @@ fn get_sum_gps(input_file: &str) -> u32 {
             .iter()
             .enumerate()
             .fold(0, |acc, (j, entry)| match entry {
-                WarehouseEntry::Box => acc + (100 * i as u32 + j as u32),
+                'O' => acc + (100 * i as u32 + j as u32),
                 _ => acc,
             })
     })
-}
-
-fn print_warehouse_wider(warehouse: &[Vec<char>]) {
-    for row in warehouse {
-        for entry in row {
-            print!("{}", entry);
-        }
-        println!();
-    }
-}
-
-fn get_robot_pos_wider(warehouse: &[Vec<char>]) -> (usize, usize) {
-    for (y, row) in warehouse.iter().enumerate() {
-        for (x, entry) in row.iter().enumerate() {
-            if *entry == '@' {
-                return (x, y);
-            }
-        }
-    }
-    panic!("Robot not found in the warehouse");
 }
 
 fn perform_move_wider(
@@ -216,33 +176,34 @@ fn get_sum_gps_wider(input_file: &str) -> u32 {
         let mut new_row: Vec<char> = vec![];
         for entry in row {
             match entry {
-                WarehouseEntry::Empty => {
+                ' ' => {
                     new_row.push('.');
                     new_row.push('.');
                 }
-                WarehouseEntry::Wall => {
+                '#' => {
                     new_row.push('#');
                     new_row.push('#');
                 }
-                WarehouseEntry::Box => {
+                'O' => {
                     new_row.push('[');
                     new_row.push(']');
                 }
-                WarehouseEntry::Robot => {
+                '@' => {
                     new_row.push('@');
                     new_row.push('.');
                 }
+                _ => panic!("Unknown entry"),
             }
         }
         acc.push(new_row);
         acc
     });
 
-    let mut robot_pos: (usize, usize) = get_robot_pos_wider(&warehouse_wider);
+    let mut robot_pos: (usize, usize) = get_robot_pos(&warehouse_wider);
 
     println!("Initial robot pos: {:?}", robot_pos);
     println!("Initial state:");
-    print_warehouse_wider(&warehouse_wider);
+    print_warehouse(&warehouse_wider);
     println!();
 
     for your_move in &input.moves {
