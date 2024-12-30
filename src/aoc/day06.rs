@@ -92,7 +92,7 @@ fn process_list_entry(
     has_loop: &mut bool,
     list_node_pos: &ListNodePos,
 ) {
-    let (current_row, current_col) = list_node.val.pos;
+    let (curr_row, curr_col) = list_node.val.pos;
     let (next_pos_row, next_pos_col) = list_node_pos.next_pos;
     let next_pri_map_entry = map[next_pos_row][next_pos_col];
     if next_pri_map_entry == MapEntry::Obstruction {
@@ -101,11 +101,11 @@ fn process_list_entry(
             (next_pos_row, next_pos_col),
             list_node_pos.next_dir,
             list_node_pos.alternate_dir,
-            (current_row, current_col)
+            (curr_row, curr_col)
         );*/
         list_node.next = Some(Box::new(ListNode::new(ListNodeEntry {
             map_entry: MapEntry::Clear,
-            pos: (current_row, current_col),
+            pos: (curr_row, curr_col),
             direction: list_node_pos.alternate_dir,
         })));
         build_list(
@@ -144,17 +144,17 @@ fn build_list(
     visited_nodes: &mut Vec<VisitedNodeEntry>,
     has_loop: &mut bool,
 ) {
-    let (current_row, current_col) = list_node.val.pos;
-    if current_row as i32 - 1 < 0 {
+    let (curr_row, curr_col) = list_node.val.pos;
+    if curr_row as i32 - 1 < 0 {
         return;
     }
-    if current_col as i32 - 1 < 0 {
+    if curr_col as i32 - 1 < 0 {
         return;
     }
-    if current_row as i32 + 1 >= map.len() as i32 {
+    if curr_row as i32 + 1 >= map.len() as i32 {
         return;
     }
-    if current_col as i32 + 1 >= map[0].len() as i32 {
+    if curr_col as i32 + 1 >= map[0].len() as i32 {
         return;
     }
     if detect_loop(visited_nodes) {
@@ -165,10 +165,10 @@ fn build_list(
         );*/
         return;
     }
-    let n_dir = (current_row - 1, current_col);
-    let s_dir = (current_row + 1, current_col);
-    let e_dir = (current_row, current_col + 1);
-    let w_dir = (current_row, current_col - 1);
+    let n_dir = (curr_row - 1, curr_col);
+    let s_dir = (curr_row + 1, curr_col);
+    let e_dir = (curr_row, curr_col + 1);
+    let w_dir = (curr_row, curr_col - 1);
     match list_node.val.direction {
         Direction::N => {
             process_list_entry(

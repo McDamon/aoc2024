@@ -43,50 +43,50 @@ fn print_tree(tree: &ArenaTree<u32>) {
 fn build_tree(
     tree: &mut ArenaTree<u32>,
     top_map: &Vec<Vec<u32>>,
-    current_level: u32,
-    current_pos: (usize, usize),
+    curr_level: u32,
+    curr_pos: (usize, usize),
     visited_hiking_trails: &mut HashSet<(usize, usize)>,
 ) {
-    if current_level == 9 && !visited_hiking_trails.contains(&current_pos) {
-        //println!("Found hiking trail at {:?}, level: {:?}, visited", current_pos, current_level);
-        visited_hiking_trails.insert(current_pos);
+    if curr_level == 9 && !visited_hiking_trails.contains(&curr_pos) {
+        //println!("Found hiking trail at {:?}, level: {:?}, visited", curr_pos, curr_level);
+        visited_hiking_trails.insert(curr_pos);
     }
 
-    let (current_row, current_col) = current_pos;
-    let n_dir = if current_row as i32 - 1 < 0 {
+    let (curr_row, curr_col) = curr_pos;
+    let n_dir = if curr_row as i32 - 1 < 0 {
         None
     } else {
-        Some((current_row - 1, current_col))
+        Some((curr_row - 1, curr_col))
     };
-    let s_dir = if current_row as i32 + 1 >= top_map.len() as i32 {
+    let s_dir = if curr_row as i32 + 1 >= top_map.len() as i32 {
         None
     } else {
-        Some((current_row + 1, current_col))
+        Some((curr_row + 1, curr_col))
     };
-    let e_dir = if current_col as i32 + 1 >= top_map[0].len() as i32 {
+    let e_dir = if curr_col as i32 + 1 >= top_map[0].len() as i32 {
         None
     } else {
-        Some((current_row, current_col + 1))
+        Some((curr_row, curr_col + 1))
     };
-    let w_dir = if current_col as i32 - 1 < 0 {
+    let w_dir = if curr_col as i32 - 1 < 0 {
         None
     } else {
-        Some((current_row, current_col - 1))
+        Some((curr_row, curr_col - 1))
     };
 
-    let current_node = tree.add_node(current_level);
+    let curr_node = tree.add_node(curr_level);
 
     if let Some((n_row, n_col)) = n_dir
         && let Some(n_level) = top_map.get(n_row).and_then(|row| row.get(n_col))
-        && *n_level == current_level + 1
+        && *n_level == curr_level + 1
     {
         /*println!(
             "At {:?}, level: {:?}, moving N, level: {:?}",
-            current_pos, current_level, n_level
+            curr_pos, curr_level, n_level
         );*/
         let n_node: usize = tree.add_node(*n_level);
-        tree.arena[current_node].children.push(n_node);
-        tree.arena[n_node].parent = Some(current_node);
+        tree.arena[curr_node].children.push(n_node);
+        tree.arena[n_node].parent = Some(curr_node);
         build_tree(
             tree,
             top_map,
@@ -98,15 +98,15 @@ fn build_tree(
 
     if let Some((s_row, s_col)) = s_dir
         && let Some(s_level) = top_map.get(s_row).and_then(|row| row.get(s_col))
-        && *s_level == current_level + 1
+        && *s_level == curr_level + 1
     {
         /*println!(
             "At {:?}, level: {:?}, moving S, level: {:?}",
-            current_pos, current_level, s_level
+            curr_pos, curr_level, s_level
         );*/
         let s_node = tree.add_node(*s_level);
-        tree.arena[current_node].children.push(s_node);
-        tree.arena[s_node].parent = Some(current_node);
+        tree.arena[curr_node].children.push(s_node);
+        tree.arena[s_node].parent = Some(curr_node);
         build_tree(
             tree,
             top_map,
@@ -118,15 +118,15 @@ fn build_tree(
 
     if let Some((e_row, e_col)) = e_dir
         && let Some(e_level) = top_map.get(e_row).and_then(|row| row.get(e_col))
-        && *e_level == current_level + 1
+        && *e_level == curr_level + 1
     {
         /*println!(
             "At {:?}, level: {:?}, moving E, level: {:?}",
-            current_pos, current_level, e_level
+            curr_pos, curr_level, e_level
         );*/
         let e_node = tree.add_node(*e_level);
-        tree.arena[current_node].children.push(e_node);
-        tree.arena[e_node].parent = Some(current_node);
+        tree.arena[curr_node].children.push(e_node);
+        tree.arena[e_node].parent = Some(curr_node);
         build_tree(
             tree,
             top_map,
@@ -138,15 +138,15 @@ fn build_tree(
 
     if let Some((w_row, w_col)) = w_dir
         && let Some(w_level) = top_map.get(w_row).and_then(|row| row.get(w_col))
-        && *w_level == current_level + 1
+        && *w_level == curr_level + 1
     {
         /*println!(
             "At {:?}, level: {:?}, moving W, level: {:?}",
-            current_pos, current_level, w_level
+            curr_pos, curr_level, w_level
         );*/
         let w_node = tree.add_node(*w_level);
-        tree.arena[current_node].children.push(w_node);
-        tree.arena[w_node].parent = Some(current_node);
+        tree.arena[curr_node].children.push(w_node);
+        tree.arena[w_node].parent = Some(curr_node);
         build_tree(
             tree,
             top_map,

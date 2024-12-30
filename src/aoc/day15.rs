@@ -1,11 +1,14 @@
 // https://adventofcode.com/2024/day/15
 
 use core::panic;
-use std::vec;
+use std::{
+    collections::{HashSet, VecDeque},
+    vec,
+};
 
 use super::utils::get_lines;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Move {
     Up,
     Down,
@@ -71,20 +74,20 @@ fn print_warehouse(warehouse: &[Vec<char>]) {
     }
 }
 
-fn get_next_move(current_pos: (usize, usize), your_move: &Move) -> (usize, usize) {
-    let (current_x, current_y) = current_pos;
-    match your_move {
-        Move::Up => (current_x, current_y - 1),
-        Move::Down => (current_x, current_y + 1),
-        Move::Left => (current_x - 1, current_y),
-        Move::Right => (current_x + 1, current_y),
+fn get_next_move(curr_pos: (usize, usize), move_dir: &Move) -> (usize, usize) {
+    let (curr_x, curr_y) = curr_pos;
+    match move_dir {
+        Move::Up => (curr_x, curr_y - 1),
+        Move::Down => (curr_x, curr_y + 1),
+        Move::Left => (curr_x - 1, curr_y),
+        Move::Right => (curr_x + 1, curr_y),
     }
 }
 
-fn perform_move(warehouse: &mut [Vec<char>], robot_pos: &mut (usize, usize), your_move: &Move) {
-    //println!("Move: {:?}", your_move);
+fn perform_move(warehouse: &mut [Vec<char>], robot_pos: &mut (usize, usize), move_dir: &Move) {
+    //println!("Move: {:?}", move_dir);
     let (robot_x, robot_y) = robot_pos;
-    let mut maybe_next_move = Some(get_next_move((*robot_x, *robot_y), your_move));
+    let mut maybe_next_move = Some(get_next_move((*robot_x, *robot_y), move_dir));
     while let Some(next_move) = maybe_next_move {
         let (next_x, next_y) = next_move;
         match warehouse[next_y][next_x] {
@@ -96,12 +99,12 @@ fn perform_move(warehouse: &mut [Vec<char>], robot_pos: &mut (usize, usize), you
                 maybe_next_move = None;
             }
             'O' => {
-                let (peek_x, peek_y) = get_next_move((next_x, next_y), your_move);
+                let (peek_x, peek_y) = get_next_move((next_x, next_y), move_dir);
                 match warehouse[peek_y][peek_x] {
                     '.' => {
                         warehouse[next_y][next_x] = '.';
                         warehouse[peek_y][peek_x] = 'O';
-                        maybe_next_move = Some(get_next_move((*robot_x, *robot_y), your_move))
+                        maybe_next_move = Some(get_next_move((*robot_x, *robot_y), move_dir))
                     }
                     'O' => maybe_next_move = Some((peek_x, peek_y)),
                     _ => maybe_next_move = None,
@@ -140,8 +143,8 @@ fn get_sum_gps(input_file: &str) -> u32 {
     print_warehouse(&warehouse);
     println!();*/
 
-    for your_move in &input.moves {
-        perform_move(&mut warehouse, &mut robot_pos, your_move);
+    for move_dir in &input.moves {
+        perform_move(&mut warehouse, &mut robot_pos, move_dir);
     }
 
     warehouse.iter().enumerate().fold(0, |acc, (i, row)| {
@@ -158,11 +161,11 @@ fn get_sum_gps(input_file: &str) -> u32 {
 fn perform_move_wider(
     warehouse: &mut [Vec<char>],
     robot_pos: &mut (usize, usize),
-    your_move: &Move,
+    move_dir: &Move,
 ) {
-    println!("Move: {:?}", your_move);
+    println!("Move: {:?}", move_dir);
     let (robot_x, robot_y) = robot_pos;
-    let mut maybe_next_move = Some(get_next_move((*robot_x, *robot_y), your_move));
+    let mut maybe_next_move = Some(get_next_move((*robot_x, *robot_y), move_dir));
     while let Some(next_move) = maybe_next_move {
         let (next_x, next_y) = next_move;
         match warehouse[next_y][next_x] {
@@ -173,17 +176,9 @@ fn perform_move_wider(
                 *robot_y = next_y;
                 maybe_next_move = None;
             }
-            'O' => {
-                let (peek_x, peek_y) = get_next_move((next_x, next_y), your_move);
-                match warehouse[peek_y][peek_x] {
-                    '.' => {
-                        warehouse[next_y][next_x] = '.';
-                        warehouse[peek_y][peek_x] = 'O';
-                        maybe_next_move = Some(get_next_move((*robot_x, *robot_y), your_move))
-                    }
-                    'O' => maybe_next_move = Some((peek_x, peek_y)),
-                    _ => maybe_next_move = None,
-                }
+            '[' | ']' => {
+                maybe_next_move =
+                    perform_move_box_wider(warehouse, (*robot_x, *robot_y), next_move, move_dir);
             }
             _ => {
                 maybe_next_move = None;
@@ -193,6 +188,100 @@ fn perform_move_wider(
 
     print_warehouse(warehouse);
     println!();
+}
+
+fn perform_move_box_wider(
+    warehouse: &mut [Vec<char>],
+    robot_pos: (usize, usize),
+    first_box_pos: (usize, usize),
+    move_dir: &Move,
+) -> Option<(usize, usize)> {
+    let mut move_queue: VecDeque<(usize, usize)> = VecDeque::new();
+    move_queue.push_front(first_box_pos);
+
+    let mut visited_moves: HashSet<(usize, usize)> = HashSet::new();
+
+    while let Some(curr_move_pos) = move_queue.pop_front() {
+        if let Some(adj_moves) = get_adj_moves(curr_move_pos, move_dir) {
+            for adj_move_pos in &adj_moves {
+                let (curr_move_x, curr_move_y) = curr_move_pos;
+                let curr_move = warehouse[curr_move_y][curr_move_x];
+                if is_box_move_possible(warehouse, &visited_moves, curr_move_pos) {
+                    let (adj_move_x, adj_move_y) = adj_move_pos;
+                    let adj_move = warehouse[*adj_move_y][*adj_move_x];
+                    println!(
+                        "Visiting box {:?} at {:?}, move_dir: {:?}",
+                        adj_move, adj_move_pos, move_dir
+                    );
+
+                    warehouse[*adj_move_y][*adj_move_x] = curr_move;
+
+                    move_queue.push_front(*adj_move_pos);
+                    visited_moves.insert(*adj_move_pos);
+                }
+            }
+        } else {
+            continue;
+        }
+    }
+    Some(robot_pos)
+}
+
+fn is_box_move_possible(
+    warehouse: &[Vec<char>],
+    visited_moves: &HashSet<(usize, usize)>,
+    curr_move_pos: (usize, usize),
+) -> bool {
+    let (curr_move_x, curr_move_y) = curr_move_pos;
+
+    // If cell is out of bounds
+    if curr_move_x >= warehouse[0].len() || curr_move_y >= warehouse.len() {
+        return false;
+    }
+
+    // If cell is visited
+    if visited_moves.contains(&curr_move_pos) {
+        return false;
+    }
+
+    // Can't be a wall or a dot
+    match warehouse[curr_move_y][curr_move_x] {
+        '#' | '.' => return false,
+        _ => (),
+    }
+
+    // Otherwise can be visited
+    return true;
+}
+
+fn get_adj_moves(curr_pos: (usize, usize), move_dir: &Move) -> Option<Vec<(usize, usize)>> {
+    let (curr_x, curr_y) = curr_pos;
+    let mut adj_moves = vec![];
+
+    let potential_moves = match move_dir {
+        Move::Up => vec![
+            (curr_x - 1, curr_y - 1),
+            (curr_x, curr_y - 1),
+            (curr_x + 1, curr_y - 1),
+        ],
+        Move::Down => vec![
+            (curr_x - 1, curr_y + 1),
+            (curr_x, curr_y + 1),
+            (curr_x + 1, curr_y + 1),
+        ],
+        Move::Left => vec![(curr_x - 1, curr_y)],
+        Move::Right => vec![(curr_x + 1, curr_y)],
+    };
+
+    for potential_move in potential_moves {
+        adj_moves.push(potential_move);
+    }
+
+    if adj_moves.is_empty() {
+        None
+    } else {
+        Some(adj_moves)
+    }
 }
 
 fn get_sum_gps_wider(input_file: &str) -> u32 {
@@ -233,8 +322,8 @@ fn get_sum_gps_wider(input_file: &str) -> u32 {
     print_warehouse(&warehouse_wider);
     println!();
 
-    for your_move in &input.moves {
-        perform_move_wider(&mut warehouse_wider, &mut robot_pos, your_move);
+    for move_dir in &input.moves {
+        perform_move_wider(&mut warehouse_wider, &mut robot_pos, move_dir);
     }
 
     warehouse_wider.iter().enumerate().fold(0, |acc, (i, row)| {
@@ -352,6 +441,11 @@ mod tests {
     #[test]
     fn test_get_sum_gps_wider_test09() {
         assert_eq!(9021, get_sum_gps_wider("input/day15_test09.txt"));
+    }
+
+    #[test]
+    fn test_get_sum_gps_wider_test10() {
+        assert_eq!(0, get_sum_gps_wider("input/day15_test10.txt"));
     }
 
     #[test]
