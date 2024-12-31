@@ -158,6 +158,35 @@ fn get_sum_gps(input_file: &str) -> u32 {
     })
 }
 
+fn widen_warehouse(warehouse: &[Vec<char>]) -> Vec<Vec<char>> {
+    warehouse.iter().fold(vec![], |mut acc, row| {
+        let mut new_row: Vec<char> = vec![];
+        for entry in row {
+            match entry {
+                '.' => {
+                    new_row.push('.');
+                    new_row.push('.');
+                }
+                '#' => {
+                    new_row.push('#');
+                    new_row.push('#');
+                }
+                'O' => {
+                    new_row.push('[');
+                    new_row.push(']');
+                }
+                '@' => {
+                    new_row.push('@');
+                    new_row.push('.');
+                }
+                _ => panic!("Unknown entry"),
+            }
+        }
+        acc.push(new_row);
+        acc
+    })
+}
+
 fn perform_move_wider(
     warehouse: &mut [Vec<char>],
     robot_pos: &mut (usize, usize),
@@ -287,33 +316,7 @@ fn get_adj_moves(curr_pos: (usize, usize), move_dir: &Move) -> Option<Vec<(usize
 fn get_sum_gps_wider(input_file: &str) -> u32 {
     let input = parse_input(input_file);
 
-    let mut warehouse_wider: Vec<Vec<char>> =
-        input.warehouse.iter().fold(vec![], |mut acc, row| {
-            let mut new_row: Vec<char> = vec![];
-            for entry in row {
-                match entry {
-                    '.' => {
-                        new_row.push('.');
-                        new_row.push('.');
-                    }
-                    '#' => {
-                        new_row.push('#');
-                        new_row.push('#');
-                    }
-                    'O' => {
-                        new_row.push('[');
-                        new_row.push(']');
-                    }
-                    '@' => {
-                        new_row.push('@');
-                        new_row.push('.');
-                    }
-                    _ => panic!("Unknown entry"),
-                }
-            }
-            acc.push(new_row);
-            acc
-        });
+    let mut warehouse_wider = widen_warehouse(&input.warehouse);
 
     let mut robot_pos: (usize, usize) = get_robot_pos(&warehouse_wider);
 
